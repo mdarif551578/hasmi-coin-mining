@@ -39,37 +39,39 @@ export function TransactionsTable({ className, limit }: { className?: string, li
     return (
         <Card className={cn("h-full flex flex-col rounded-2xl", className)}>
             <CardHeader>
-                <CardTitle>Recent Transactions</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Recent Transactions</CardTitle>
                 <CardDescription>A log of your recent wallet activity.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[40px] pl-4"></TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead className="text-right pr-4">Status</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {displayTransactions.map(tx => (
-                            <TableRow key={tx.id}>
-                                <TableCell className="pl-4"><TransactionIcon type={tx.type} /></TableCell>
-                                <TableCell className="font-medium capitalize">{tx.type.replace('-', ' ')}</TableCell>
-                                <TableCell className={cn(
-                                    "font-semibold",
-                                    isPositive(tx.type) ? "text-green-400" : "text-red-400"
-                                )}>
-                                    {isPositive(tx.type) ? '+' : '-'}{tx.amount.toFixed(2)} HC
-                                </TableCell>
-                                <TableCell className="text-right pr-4">
-                                    <Badge variant={getStatusBadgeVariant(tx.status)} className="capitalize">{tx.status}</Badge>
-                                </TableCell>
+                 <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[40px] pl-4"></TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead className="text-right pr-4">Status</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {displayTransactions.map(tx => (
+                                <TableRow key={tx.id}>
+                                    <TableCell className="pl-4"><TransactionIcon type={tx.type} /></TableCell>
+                                    <TableCell className="font-medium capitalize">{tx.type.replace('-', ' ')}</TableCell>
+                                    <TableCell className={cn(
+                                        "font-semibold",
+                                        isPositive(tx.type) ? "text-green-400" : "text-red-400"
+                                    )}>
+                                        {isPositive(tx.type) ? '+' : '-'}{tx.amount.toFixed(2)} HC
+                                    </TableCell>
+                                    <TableCell className="text-right pr-4">
+                                        <Badge variant={getStatusBadgeVariant(tx.status)} className="capitalize">{tx.status}</Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
     );

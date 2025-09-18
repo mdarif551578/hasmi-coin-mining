@@ -29,8 +29,8 @@ export function ReferralCard({ className }: { className?: string }) {
             <CardContent>
                 <p className="text-xs text-muted-foreground">Share this code to earn bonuses!</p>
                 <div className="flex items-center space-x-2 mt-2">
-                    <Input value={user.referralCode} readOnly className="font-mono text-sm" />
-                    <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                    <Input value={user.referralCode} readOnly className="font-mono text-sm h-9" />
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={copyToClipboard}>
                         <Copy className="h-4 w-4" />
                     </Button>
                 </div>

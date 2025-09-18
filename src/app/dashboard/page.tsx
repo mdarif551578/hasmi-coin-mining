@@ -7,13 +7,13 @@ export const dynamic = 'force-dynamic';
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
+    <div className="flex flex-col gap-6 p-4 md:p-6">
       <WalletCard />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ReferralCard />
         <MiningStatusCard />
       </div>
-      <TransactionsTable />
+      <TransactionsTable limit={5} />
     </div>
   );
 }

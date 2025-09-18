@@ -16,11 +16,11 @@ export function WalletCard({ className }: { className?: string }) {
                 <p className="text-xs text-muted-foreground">Hasmi Coin</p>
             </CardContent>
             <CardFooter className="gap-2 flex-col sm:flex-row">
-                <Button className="w-full h-12">
+                <Button className="w-full h-11 md:h-12">
                     <Plus className="mr-2" />
                     Deposit
                 </Button>
-                <Button variant="secondary" className="w-full h-12">
+                <Button variant="secondary" className="w-full h-11 md:h-12">
                     <ArrowUpRight className="mr-2" />
                     Withdraw
                 </Button>
