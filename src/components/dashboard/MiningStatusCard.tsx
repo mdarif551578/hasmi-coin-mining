@@ -14,10 +14,10 @@ export function MiningStatusCard({ className }: { className?: string }) {
                 <Cog className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <p className="text-lg md:text-2xl font-bold text-green-400">{user.miningStatus}</p>
+                <p className="text-lg md:text-xl font-bold text-green-400">{user.miningStatus}</p>
                 <p className="text-xs text-muted-foreground">Your mining rigs are online.</p>
                 <Link href="/mining" className="mt-4 block">
-                    <Button variant="outline" size="sm" className="w-full">Go to Mining Center</Button>
+                    <Button variant="outline" size="sm" className="w-full h-9">Go to Mining Center</Button>
                 </Link>
             </CardContent>
         </Card>

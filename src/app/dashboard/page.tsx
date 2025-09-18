@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4 p-4 md:p-6">
       <WalletCard />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ReferralCard />

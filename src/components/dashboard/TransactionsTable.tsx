@@ -57,15 +57,15 @@ export function TransactionsTable({ className, limit }: { className?: string, li
                             {displayTransactions.map(tx => (
                                 <TableRow key={tx.id}>
                                     <TableCell className="pl-4"><TransactionIcon type={tx.type} /></TableCell>
-                                    <TableCell className="font-medium capitalize">{tx.type.replace('-', ' ')}</TableCell>
+                                    <TableCell className="font-medium capitalize text-sm">{tx.type.replace('-', ' ')}</TableCell>
                                     <TableCell className={cn(
-                                        "font-semibold",
+                                        "font-semibold text-sm",
                                         isPositive(tx.type) ? "text-green-400" : "text-red-400"
                                     )}>
                                         {isPositive(tx.type) ? '+' : '-'}{tx.amount.toFixed(2)} HC
                                     </TableCell>
                                     <TableCell className="text-right pr-4">
-                                        <Badge variant={getStatusBadgeVariant(tx.status)} className="capitalize">{tx.status}</Badge>
+                                        <Badge variant={getStatusBadgeVariant(tx.status)} className="capitalize text-xs">{tx.status}</Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}

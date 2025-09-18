@@ -56,8 +56,8 @@ export function MiningSection() {
                                 <CardDescription>Claim your free Hasmi Coins every 24 hours.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <p className="text-sm">Next claim available in:</p>
-                                <div className='relative w-[120px] h-[120px] mx-auto flex items-center justify-center'>
+                                <p className="text-sm text-center">Next claim available in:</p>
+                                <div className='relative w-[100px] h-[100px] md:w-[120px] md:h-[120px] mx-auto flex items-center justify-center'>
                                      <svg className="absolute w-full h-full" viewBox="0 0 36 36">
                                         <path
                                             d="M18 2.0845
@@ -78,11 +78,11 @@ export function MiningSection() {
                                             strokeLinecap="round"
                                         />
                                     </svg>
-                                    <p className="text-2xl font-bold font-mono">{formatTime(timeRemaining)}</p>
+                                    <p className="text-xl md:text-2xl font-bold font-mono whitespace-nowrap">{formatTime(timeRemaining)}</p>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full h-11" disabled={!canClaim}>Claim 10 HC</Button>
+                                <Button className="w-full h-10 md:h-11" disabled={!canClaim}>Claim 10 HC</Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
@@ -95,11 +95,11 @@ export function MiningSection() {
                                         <CardDescription>{plan.duration}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-2 flex-1">
-                                        <p className="font-bold text-base">{plan.rate}</p>
-                                        <p className="text-xl font-bold font-headline text-primary">${plan.price}</p>
+                                        <p className="font-bold text-sm md:text-base">{plan.rate}</p>
+                                        <p className="text-lg md:text-xl font-bold font-headline text-primary">${plan.price}</p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-11">Subscribe</Button>
+                                        <Button className="w-full h-10 md:h-11">Subscribe</Button>
                                     </CardFooter>
                                 </Card>
                             ))}
@@ -118,7 +118,7 @@ export function MiningSection() {
                                         <p>Return: <span className="font-bold text-primary">${plan.profit}</span></p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-11">Purchase</Button>
+                                        <Button className="w-full h-10 md:h-11">Purchase</Button>
                                     </CardFooter>
                                 </Card>
                             ))}

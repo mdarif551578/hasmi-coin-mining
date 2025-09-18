@@ -5,7 +5,7 @@ import { tasks } from "@/lib/data";
 
 export default function TasksPage() {
   return (
-    <div className="p-4">
+    <div className="p-4 md:p-6">
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-lg">Tasks & Earn</CardTitle>
@@ -14,13 +14,13 @@ export default function TasksPage() {
           {tasks.map(task => (
             <Card key={task.id} className="flex items-center justify-between p-3 bg-card-foreground/5">
               <div className="flex items-center gap-3">
-                <CheckSquare className="size-5 text-primary" />
+                <CheckSquare className="size-5 text-primary shrink-0" />
                 <div>
                   <p className="text-sm">{task.description}</p>
                   <p className="text-sm text-primary font-bold">+{task.reward} HC</p>
                 </div>
               </div>
-              <Button size="sm">Go</Button>
+              <Button size="sm" className="h-8 px-3 text-xs ml-2">Go</Button>
             </Card>
           ))}
         </CardContent>
