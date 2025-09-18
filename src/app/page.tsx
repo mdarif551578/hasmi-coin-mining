@@ -15,7 +15,7 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-900 to-background p-4 text-center">
+    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#000957] to-background p-4 text-center">
       <div className="flex-grow flex flex-col items-center justify-center space-y-8 animate-pulse">
         <div className="relative">
           <div
