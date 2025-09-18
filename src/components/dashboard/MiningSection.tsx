@@ -24,10 +24,10 @@ export function MiningSection() {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="free">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="free"><Zap className="mr-2 size-4" />Free</TabsTrigger>
-                        <TabsTrigger value="paid"><ShoppingCart className="mr-2 size-4" />Paid Plans</TabsTrigger>
-                        <TabsTrigger value="nft"><Gem className="mr-2 size-4" />NFT Plans</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3 text-xs h-auto">
+                        <TabsTrigger value="free" className="py-2"><Zap className="mr-1 md:mr-2 size-4" />Free</TabsTrigger>
+                        <TabsTrigger value="paid" className="py-2"><ShoppingCart className="mr-1 md:mr-2 size-4" />Paid Plans</TabsTrigger>
+                        <TabsTrigger value="nft" className="py-2"><Gem className="mr-1 md:mr-2 size-4" />NFT Plans</TabsTrigger>
                     </TabsList>
                     <TabsContent value="free" className="mt-4">
                         <Card className="bg-card/50">
@@ -46,7 +46,7 @@ export function MiningSection() {
                         </Card>
                     </TabsContent>
                     <TabsContent value="paid" className="mt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {paidPlans.map(plan => (
                                 <Card key={plan.id} className="flex flex-col bg-card/50">
                                     <CardHeader>
@@ -65,7 +65,7 @@ export function MiningSection() {
                         </div>
                     </TabsContent>
                     <TabsContent value="nft" className="mt-4">
-                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {nftPlans.map(plan => (
                                 <Card key={plan.id} className="flex flex-col bg-card/50">
                                     <CardHeader>

@@ -19,7 +19,7 @@ export default function Home() {
       <div className="flex-grow flex flex-col items-center justify-center space-y-8 animate-pulse">
         <div className="relative">
           <div
-            className="w-40 h-40 bg-primary/10 rounded-full flex items-center justify-center
+            className="w-32 h-32 md:w-40 md:h-40 bg-primary/10 rounded-full flex items-center justify-center
               shadow-[0_0_20px_theme(colors.primary),_0_0_40px_theme(colors.primary)]"
           >
              <svg
@@ -30,7 +30,7 @@ export default function Home() {
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="w-24 h-24 text-primary"
+                className="w-20 h-20 md:w-24 md:h-24 text-primary"
             >
                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
                 <path d="M10.5 15.5H14s1.5 0 1.5-1.5-1.5-1.5-1.5-1.5H10.5V10h4" />
@@ -41,8 +41,8 @@ export default function Home() {
         </div>
 
         <div>
-          <h1 className="text-6xl font-bold text-foreground tracking-tighter">hasmi</h1>
-          <p className="text-2xl text-foreground/80 tracking-wide">coin mining</p>
+          <h1 className="text-5xl md:text-6xl font-bold text-foreground tracking-tighter">hasmi</h1>
+          <p className="text-xl md:text-2xl text-foreground/80 tracking-wide">coin mining</p>
         </div>
       </div>
     </div>
