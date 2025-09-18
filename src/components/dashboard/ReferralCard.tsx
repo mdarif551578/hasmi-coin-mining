@@ -11,11 +11,13 @@ export function ReferralCard({ className }: { className?: string }) {
     const { toast } = useToast();
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(user.referralCode);
-        toast({
-            title: "Copied!",
-            description: "Referral code copied to clipboard.",
-        });
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(user.referralCode);
+            toast({
+                title: "Copied!",
+                description: "Referral code copied to clipboard.",
+            });
+        }
     };
 
     return (

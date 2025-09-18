@@ -27,3 +27,9 @@ export type User = {
     referralCode: string;
     walletBalance: number;
 }
+
+export type Task = {
+  id: number;
+  description: string;
+  reward: number;
+};

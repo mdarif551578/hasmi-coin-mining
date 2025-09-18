@@ -1,4 +1,4 @@
-import type { Transaction, MiningPlan, NftPlan, User } from './types';
+import type { Transaction, MiningPlan, NftPlan, User, Task } from './types';
 
 export const user: User = {
     name: "Hasmi",
@@ -25,4 +25,10 @@ export const nftPlans: NftPlan[] = [
     { id: 'n1', name: 'Bronze NFT', cost: 5, profit: 7.5, duration: '30 days' },
     { id: 'n2', name: 'Silver NFT', cost: 20, profit: 35, duration: '45 days' },
     { id: 'n3', name: 'Gold NFT', cost: 100, profit: 200, duration: '60 days' },
+];
+
+export const tasks: Task[] = [
+  { id: 1, description: "Follow us on Twitter", reward: 5 },
+  { id: 2, description: "Join our Telegram channel", reward: 5 },
+  { id: 3, description: "Watch a tutorial video", reward: 2 },
 ];

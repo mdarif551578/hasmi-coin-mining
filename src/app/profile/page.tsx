@@ -1,7 +1,7 @@
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
-import { LogOut, Shield, User as UserIcon, Hash, Wallet, Star } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, Wallet, Star } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/ReferralCard";
 
 export default function ProfilePage() {

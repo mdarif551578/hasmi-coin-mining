@@ -1,12 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckSquare } from "lucide-react";
-
-const tasks = [
-  { id: 1, description: "Follow us on Twitter", reward: 5 },
-  { id: 2, description: "Join our Telegram channel", reward: 5 },
-  { id: 3, description: "Watch a tutorial video", reward: 2 },
-];
+import { tasks } from "@/lib/data";
 
 export default function TasksPage() {
   return (
