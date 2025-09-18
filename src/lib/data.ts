@@ -1,9 +1,7 @@
 import type { Transaction, MiningPlan, NftPlan, User } from './types';
-import { getPlaceholderImage } from './placeholder-images';
 
 export const user: User = {
     name: "Hasmi",
-    avatarUrl: getPlaceholderImage("user-avatar")?.imageUrl || "https://picsum.photos/seed/10/40/40",
     referralCode: "HASMI-A1B2C3",
     walletBalance: 1234.56,
 };

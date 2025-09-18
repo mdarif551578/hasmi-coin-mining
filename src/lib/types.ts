@@ -24,7 +24,6 @@ export type NftPlan = {
 
 export type User = {
     name: string;
-    avatarUrl: string;
     referralCode: string;
     walletBalance: number;
 }

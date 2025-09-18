@@ -1,22 +1,38 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
-import { LogOut, Shield } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, Hash, Wallet, Star } from "lucide-react";
+import { ReferralCard } from "@/components/dashboard/ReferralCard";
 
 export default function ProfilePage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
-      <Card className="rounded-2xl text-center">
-        <CardContent className="pt-6">
-          <Avatar className="mx-auto size-24 border-4 border-primary">
-            <AvatarImage src={user.avatarUrl} alt={user.name} />
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <h1 className="mt-4 text-2xl font-bold">{user.name}</h1>
-          <p className="text-muted-foreground">{user.referralCode}</p>
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserIcon className="size-6 text-primary" />
+            <span>{user.name}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-card/50 rounded-lg">
+                <div>
+                    <p className="text-sm text-muted-foreground">Wallet Balance</p>
+                    <p className="text-2xl font-bold">{user.walletBalance.toLocaleString()} HC</p>
+                </div>
+                <Wallet className="size-8 text-primary" />
+            </div>
+             <div className="flex items-center justify-between p-4 bg-card/50 rounded-lg">
+                <div>
+                    <p className="text-sm text-muted-foreground">Total Referrals</p>
+                    <p className="text-2xl font-bold">12</p>
+                </div>
+                <Star className="size-8 text-primary" />
+            </div>
         </CardContent>
       </Card>
+      
+      <ReferralCard />
 
       <Card className="rounded-2xl">
         <CardHeader>
