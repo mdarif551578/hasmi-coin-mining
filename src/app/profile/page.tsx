@@ -1,33 +1,33 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
-import { LogOut, Shield, User as UserIcon, Cog, Activity } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, Activity } from "lucide-react";
 
 export default function ProfilePage() {
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 space-y-4">
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-            <UserIcon className="size-5 md:size-6 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserIcon className="size-5 text-primary" />
             <span>{user.name}</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-2 md:gap-4">
-            <div className="flex flex-col items-center justify-center p-3 md:p-4 bg-card-foreground/5 rounded-lg">
-                <p className="text-xs md:text-sm text-muted-foreground">Wallet Balance</p>
-                <p className="text-lg md:text-2xl font-bold">{user.walletBalance.toLocaleString()} <span className="text-sm font-normal">HC</span></p>
+        <CardContent className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
+                <p className="text-xs text-muted-foreground">Wallet Balance</p>
+                <p className="text-lg font-bold">{user.walletBalance.toLocaleString()} <span className="text-sm font-normal">HC</span></p>
             </div>
-             <div className="flex flex-col items-center justify-center p-3 md:p-4 bg-card-foreground/5 rounded-lg">
-                <p className="text-xs md:text-sm text-muted-foreground">Referrals</p>
-                <p className="text-lg md:text-2xl font-bold">{user.totalReferrals}</p>
+             <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
+                <p className="text-xs text-muted-foreground">Referrals</p>
+                <p className="text-lg font-bold">{user.totalReferrals}</p>
             </div>
         </CardContent>
       </Card>
 
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl">Settings</CardTitle>
+          <CardTitle className="text-lg">Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
             <Button variant="ghost" className="w-full justify-start gap-2 text-base">

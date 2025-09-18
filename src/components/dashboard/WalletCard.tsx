@@ -12,15 +12,15 @@ export function WalletCard({ className }: { className?: string }) {
                 <Wallet className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-3xl md:text-4xl font-bold font-headline">{user.walletBalance.toLocaleString()} HC</div>
+                <div className="text-2xl md:text-4xl font-bold font-headline">{user.walletBalance.toLocaleString()} HC</div>
                 <p className="text-xs text-muted-foreground">Hasmi Coin</p>
             </CardContent>
             <CardFooter className="gap-2 flex-col sm:flex-row">
-                <Button className="w-full h-11 md:h-12">
+                <Button size="sm" className="w-full h-10">
                     <Plus className="mr-2" />
                     Deposit
                 </Button>
-                <Button variant="secondary" className="w-full h-11 md:h-12">
+                <Button variant="secondary" size="sm" className="w-full h-10">
                     <ArrowUpRight className="mr-2" />
                     Withdraw
                 </Button>

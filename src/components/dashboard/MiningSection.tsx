@@ -39,20 +39,20 @@ export function MiningSection() {
     return (
         <Card className="rounded-2xl w-full">
             <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Mining Center</CardTitle>
+                <CardTitle className="text-lg">Mining Center</CardTitle>
                 <CardDescription>Claim rewards and upgrade your mining capabilities.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="free" className="w-full">
                     <TabsList className="grid w-full grid-cols-3 text-xs h-auto">
-                        <TabsTrigger value="free" className="py-2 gap-1 md:gap-2"><Zap className="size-4" />Free</TabsTrigger>
-                        <TabsTrigger value="paid" className="py-2 gap-1 md:gap-2"><ShoppingCart className="size-4" />Paid</TabsTrigger>
-                        <TabsTrigger value="nft" className="py-2 gap-1 md:gap-2"><Gem className="size-4" />NFT</TabsTrigger>
+                        <TabsTrigger value="free" className="py-2 gap-1"><Zap className="size-4" />Free</TabsTrigger>
+                        <TabsTrigger value="paid" className="py-2 gap-1"><ShoppingCart className="size-4" />Paid</TabsTrigger>
+                        <TabsTrigger value="nft" className="py-2 gap-1"><Gem className="size-4" />NFT</TabsTrigger>
                     </TabsList>
                     <TabsContent value="free" className="mt-4">
                         <Card className="bg-card-foreground/5">
                             <CardHeader>
-                                <CardTitle className="text-base md:text-lg">Free Claim</CardTitle>
+                                <CardTitle className="text-base">Free Claim</CardTitle>
                                 <CardDescription>Claim your free Hasmi Coins every 24 hours.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -78,47 +78,47 @@ export function MiningSection() {
                                             strokeLinecap="round"
                                         />
                                     </svg>
-                                    <p className="text-2xl md:text-3xl font-bold font-mono">{formatTime(timeRemaining)}</p>
+                                    <p className="text-2xl font-bold font-mono">{formatTime(timeRemaining)}</p>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full h-11 md:h-12" disabled={!canClaim}>Claim 10 HC</Button>
+                                <Button className="w-full h-11" disabled={!canClaim}>Claim 10 HC</Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
                     <TabsContent value="paid" className="mt-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {paidPlans.map(plan => (
                                 <Card key={plan.id} className="flex flex-col bg-card-foreground/5">
                                     <CardHeader>
-                                        <CardTitle className="text-base md:text-lg">{plan.name}</CardTitle>
+                                        <CardTitle className="text-base">{plan.name}</CardTitle>
                                         <CardDescription>{plan.duration}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-2 flex-1">
-                                        <p className="font-bold text-base md:text-lg">{plan.rate}</p>
-                                        <p className="text-xl md:text-2xl font-bold font-headline text-primary">${plan.price}</p>
+                                        <p className="font-bold text-base">{plan.rate}</p>
+                                        <p className="text-xl font-bold font-headline text-primary">${plan.price}</p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-11 md:h-12">Subscribe</Button>
+                                        <Button className="w-full h-11">Subscribe</Button>
                                     </CardFooter>
                                 </Card>
                             ))}
                         </div>
                     </TabsContent>
                     <TabsContent value="nft" className="mt-4">
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {nftPlans.map(plan => (
                                 <Card key={plan.id} className="flex flex-col bg-card-foreground/5">
                                     <CardHeader>
-                                        <CardTitle className="text-base md:text-lg">{plan.name}</CardTitle>
+                                        <CardTitle className="text-base">{plan.name}</CardTitle>
                                         <CardDescription>{plan.duration}</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="space-y-2 flex-1 text-sm md:text-base">
+                                    <CardContent className="space-y-2 flex-1 text-sm">
                                         <p>Cost: <span className="font-bold">${plan.cost}</span></p>
                                         <p>Return: <span className="font-bold text-primary">${plan.profit}</span></p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-11 md:h-12">Purchase</Button>
+                                        <Button className="w-full h-11">Purchase</Button>
                                     </CardFooter>
                                 </Card>
                             ))}

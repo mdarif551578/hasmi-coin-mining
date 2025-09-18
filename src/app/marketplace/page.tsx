@@ -6,9 +6,9 @@ import { Plus } from "lucide-react";
 
 export default function MarketplacePage() {
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl md:text-2xl font-bold">P2P Marketplace</h1>
+        <h1 className="text-lg font-bold">P2P Marketplace</h1>
         <Button size="sm">
           <Plus className="mr-2" />
           Create Offer
@@ -17,7 +17,7 @@ export default function MarketplacePage() {
 
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl">Open Sell Offers</CardTitle>
+          <CardTitle className="text-lg">Open Sell Offers</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">

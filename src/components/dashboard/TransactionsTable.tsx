@@ -39,7 +39,7 @@ export function TransactionsTable({ className, limit }: { className?: string, li
     return (
         <Card className={cn("h-full flex flex-col rounded-2xl", className)}>
             <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Recent Transactions</CardTitle>
+                <CardTitle className="text-lg">Recent Transactions</CardTitle>
                 <CardDescription>A log of your recent wallet activity.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-0">
