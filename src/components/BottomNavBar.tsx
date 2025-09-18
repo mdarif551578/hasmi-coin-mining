@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Cog, Wallet, CheckSquare, User } from "lucide-react";
+import { LayoutDashboard, Cog, CheckSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/mining", icon: Cog, label: "Mining" },
-  { href: "/wallet", icon: Wallet, label: "Wallet" },
   { href: "/tasks", icon: CheckSquare, label: "Tasks" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
@@ -23,12 +21,12 @@ export function BottomNavBar() {
   }, []);
 
   if (!isClient) {
-    return null;
+    return null; 
   }
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-card border-t border-border/50">
-      <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
+      <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
         {navItems.map((item) => (
           <Link
             key={item.href}

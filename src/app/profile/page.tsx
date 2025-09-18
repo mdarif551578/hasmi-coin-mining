@@ -1,8 +1,9 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
-import { LogOut, Shield, User as UserIcon, Wallet, Star } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, Star, Cog } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/ReferralCard";
+import { MiningSection } from "@/components/dashboard/MiningSection";
 
 export default function ProfilePage() {
   return (
@@ -17,13 +18,6 @@ export default function ProfilePage() {
         <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-card/50 rounded-lg">
                 <div>
-                    <p className="text-sm text-muted-foreground">Wallet Balance</p>
-                    <p className="text-2xl font-bold">{user.walletBalance.toLocaleString()} HC</p>
-                </div>
-                <Wallet className="size-8 text-primary" />
-            </div>
-             <div className="flex items-center justify-between p-4 bg-card/50 rounded-lg">
-                <div>
                     <p className="text-sm text-muted-foreground">Total Referrals</p>
                     <p className="text-2xl font-bold">12</p>
                 </div>
@@ -33,6 +27,8 @@ export default function ProfilePage() {
       </Card>
       
       <ReferralCard />
+
+      <MiningSection />
 
       <Card className="rounded-2xl">
         <CardHeader>
