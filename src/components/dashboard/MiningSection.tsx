@@ -1,0 +1,90 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { paidPlans, nftPlans } from "@/lib/data";
+import { Zap, Gem, ShoppingCart } from 'lucide-react';
+
+export function MiningSection() {
+    const [progress, setProgress] = useState(13);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setProgress(66), 500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Mining Center</CardTitle>
+                <CardDescription>Claim rewards and upgrade your mining capabilities.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Tabs defaultValue="free">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="free"><Zap className="mr-2 size-4" />Free</TabsTrigger>
+                        <TabsTrigger value="paid"><ShoppingCart className="mr-2 size-4" />Paid Plans</TabsTrigger>
+                        <TabsTrigger value="nft"><Gem className="mr-2 size-4" />NFT Plans</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="free" className="mt-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Free Claim</CardTitle>
+                                <CardDescription>Claim your free Hasmi Coins every 24 hours.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <p>Next claim available in:</p>
+                                <Progress value={progress} className="w-full" />
+                                <p className="text-sm text-center text-muted-foreground">15h 47m 12s</p>
+                            </CardContent>
+                            <CardFooter>
+                                <Button className="w-full" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} disabled>Claim 10 HC</Button>
+                            </CardFooter>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="paid" className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {paidPlans.map(plan => (
+                                <Card key={plan.id} className="flex flex-col">
+                                    <CardHeader>
+                                        <CardTitle>{plan.name}</CardTitle>
+                                        <CardDescription>{plan.duration}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 flex-1">
+                                        <p className="font-bold text-lg">{plan.rate}</p>
+                                        <p className="text-2xl font-bold font-headline text-primary">${plan.price}</p>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button className="w-full">Subscribe</Button>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="nft" className="mt-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {nftPlans.map(plan => (
+                                <Card key={plan.id} className="flex flex-col">
+                                    <CardHeader>
+                                        <CardTitle>{plan.name}</CardTitle>
+                                        <CardDescription>{plan.duration}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 flex-1">
+                                        <p>Cost: <span className="font-bold">${plan.cost}</span></p>
+                                        <p>Return: <span className="font-bold text-primary">${plan.profit}</span></p>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button className="w-full">Purchase</Button>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
+    );
+}
