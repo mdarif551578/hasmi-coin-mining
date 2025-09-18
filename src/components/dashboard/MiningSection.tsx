@@ -57,7 +57,7 @@ export function MiningSection() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <p className="text-sm text-center">Next claim available in:</p>
-                                <div className='relative w-[100px] h-[100px] mx-auto flex items-center justify-center'>
+                                <div className='relative w-[150px] h-[150px] mx-auto flex items-center justify-center'>
                                      <svg className="absolute w-full h-full" viewBox="0 0 36 36">
                                         <path
                                             d="M18 2.0845
@@ -78,7 +78,7 @@ export function MiningSection() {
                                             strokeLinecap="round"
                                         />
                                     </svg>
-                                    <p className="text-xl font-bold font-mono whitespace-nowrap">{formatTime(timeRemaining)}</p>
+                                    <p className="text-2xl font-bold font-mono whitespace-nowrap">{formatTime(timeRemaining)}</p>
                                 </div>
                             </CardContent>
                             <CardFooter>
