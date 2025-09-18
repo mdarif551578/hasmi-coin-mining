@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 
 const TransactionIcon = ({ type }: { type: Transaction['type'] }) => {
     const iconMap = {
-        deposit: <ArrowDownLeft className="size-4 text-primary" />,
-        withdraw: <ArrowUpRight className="size-4 text-destructive" />,
+        deposit: <ArrowDownLeft className="size-4 text-green-400" />,
+        withdraw: <ArrowUpRight className="size-4 text-red-400" />,
         mining: <Cog className="size-4 text-muted-foreground" />,
         task: <CheckSquare className="size-4 text-muted-foreground" />,
         'marketplace-sell': <Store className="size-4 text-muted-foreground" />,
@@ -34,7 +34,7 @@ const isPositive = (type: Transaction['type']) => !['withdraw', 'marketplace-buy
 
 export function TransactionsTable({ className }: { className?: string }) {
     return (
-        <Card className={cn("h-full flex flex-col", className)}>
+        <Card className={cn("h-full flex flex-col rounded-2xl", className)}>
             <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
                 <CardDescription>A log of your recent wallet activity.</CardDescription>
@@ -56,7 +56,7 @@ export function TransactionsTable({ className }: { className?: string }) {
                                 <TableCell className="font-medium capitalize">{tx.type.replace('-', ' ')}</TableCell>
                                 <TableCell className={cn(
                                     "font-semibold",
-                                    isPositive(tx.type) ? "text-primary" : "text-destructive"
+                                    isPositive(tx.type) ? "text-green-400" : "text-red-400"
                                 )}>
                                     {isPositive(tx.type) ? '+' : '-'}{tx.amount.toFixed(2)} HC
                                 </TableCell>

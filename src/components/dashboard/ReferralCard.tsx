@@ -19,7 +19,7 @@ export function ReferralCard({ className }: { className?: string }) {
     };
 
     return (
-        <Card className={className}>
+        <Card className="rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Referral Code</CardTitle>
                 <Users className="size-4 text-muted-foreground" />

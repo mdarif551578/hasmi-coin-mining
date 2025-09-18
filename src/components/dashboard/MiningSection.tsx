@@ -17,7 +17,7 @@ export function MiningSection() {
     }, []);
 
     return (
-        <Card>
+        <Card className="rounded-2xl">
             <CardHeader>
                 <CardTitle>Mining Center</CardTitle>
                 <CardDescription>Claim rewards and upgrade your mining capabilities.</CardDescription>
@@ -30,7 +30,7 @@ export function MiningSection() {
                         <TabsTrigger value="nft"><Gem className="mr-2 size-4" />NFT Plans</TabsTrigger>
                     </TabsList>
                     <TabsContent value="free" className="mt-4">
-                        <Card>
+                        <Card className="bg-card/50">
                             <CardHeader>
                                 <CardTitle>Free Claim</CardTitle>
                                 <CardDescription>Claim your free Hasmi Coins every 24 hours.</CardDescription>
@@ -41,14 +41,14 @@ export function MiningSection() {
                                 <p className="text-sm text-center text-muted-foreground">15h 47m 12s</p>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }} disabled>Claim 10 HC</Button>
+                                <Button className="w-full h-12" disabled>Claim 10 HC</Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
                     <TabsContent value="paid" className="mt-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {paidPlans.map(plan => (
-                                <Card key={plan.id} className="flex flex-col">
+                                <Card key={plan.id} className="flex flex-col bg-card/50">
                                     <CardHeader>
                                         <CardTitle>{plan.name}</CardTitle>
                                         <CardDescription>{plan.duration}</CardDescription>
@@ -58,7 +58,7 @@ export function MiningSection() {
                                         <p className="text-2xl font-bold font-headline text-primary">${plan.price}</p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full">Subscribe</Button>
+                                        <Button className="w-full h-12">Subscribe</Button>
                                     </CardFooter>
                                 </Card>
                             ))}
@@ -67,7 +67,7 @@ export function MiningSection() {
                     <TabsContent value="nft" className="mt-4">
                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {nftPlans.map(plan => (
-                                <Card key={plan.id} className="flex flex-col">
+                                <Card key={plan.id} className="flex flex-col bg-card/50">
                                     <CardHeader>
                                         <CardTitle>{plan.name}</CardTitle>
                                         <CardDescription>{plan.duration}</CardDescription>
@@ -77,7 +77,7 @@ export function MiningSection() {
                                         <p>Return: <span className="font-bold text-primary">${plan.profit}</span></p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full">Purchase</Button>
+                                        <Button className="w-full h-12">Purchase</Button>
                                     </CardFooter>
                                 </Card>
                             ))}

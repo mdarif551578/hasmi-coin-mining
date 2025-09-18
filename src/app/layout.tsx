@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
+import { BottomNavBar } from '@/components/BottomNavBar';
 
 export const metadata: Metadata = {
   title: 'Hasmi Coin Mining',
@@ -21,9 +22,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <div className="relative flex flex-col min-h-screen">
-          <main className="flex-1">
+          <main className="flex-1 pb-20">
             {children}
           </main>
+          <BottomNavBar />
           <Toaster />
         </div>
       </body>
