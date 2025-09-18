@@ -7,13 +7,34 @@ import { Button } from "@/components/ui/button";
 import { paidPlans, nftPlans } from "@/lib/data";
 import { Zap, Gem, ShoppingCart } from 'lucide-react';
 
+const TWENTY_FOUR_HOURS_IN_SECONDS = 24 * 60 * 60;
+
 export function MiningSection() {
-    const [progress, setProgress] = useState(13);
+    const [timeRemaining, setTimeRemaining] = useState(TWENTY_FOUR_HOURS_IN_SECONDS);
 
     useEffect(() => {
-        const timer = setTimeout(() => setProgress(66), 500);
-        return () => clearTimeout(timer);
+        const timer = setInterval(() => {
+            setTimeRemaining(prevTime => {
+                if (prevTime <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prevTime - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
     }, []);
+    
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    };
+
+    const progress = ((TWENTY_FOUR_HOURS_IN_SECONDS - timeRemaining) / TWENTY_FOUR_HOURS_IN_SECONDS) * 100;
+    const canClaim = timeRemaining === 0;
 
     return (
         <Card className="rounded-2xl w-full">
@@ -50,18 +71,18 @@ export function MiningSection() {
                                             d="M18 2.0845
                                             a 15.9155 15.9155 0 0 1 0 31.831
                                             a 15.9155 15.9155 0 0 1 0 -31.831"
-                                            className="stroke-current text-primary"
+                                            className="stroke-current text-primary transition-all duration-1000 ease-linear"
                                             fill="none"
                                             strokeWidth="2"
                                             strokeDasharray={`${progress}, 100`}
                                             strokeLinecap="round"
                                         />
                                     </svg>
-                                    <p className="text-2xl md:text-3xl font-bold">15:47:12</p>
+                                    <p className="text-2xl md:text-3xl font-bold font-mono">{formatTime(timeRemaining)}</p>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full h-11 md:h-12" disabled>Claim 10 HC</Button>
+                                <Button className="w-full h-11 md:h-12" disabled={!canClaim}>Claim 10 HC</Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
