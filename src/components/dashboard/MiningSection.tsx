@@ -6,11 +6,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { paidPlans, nftPlans } from "@/lib/data";
 import { Zap, Gem, ShoppingCart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const TWENTY_FOUR_HOURS_IN_SECONDS = 24 * 60 * 60;
 
 export function MiningSection() {
     const [timeRemaining, setTimeRemaining] = useState(TWENTY_FOUR_HOURS_IN_SECONDS);
+    const { toast } = useToast();
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -24,13 +26,21 @@ export function MiningSection() {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, []);
+    }, [timeRemaining]);
     
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
         const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
         const s = (seconds % 60).toString().padStart(2, '0');
         return `${h}:${m}:${s}`;
+    };
+
+    const handleClaim = () => {
+        toast({
+            title: "Claim Successful!",
+            description: "You've received 10 Hasmi Coins.",
+        });
+        setTimeRemaining(TWENTY_FOUR_HOURS_IN_SECONDS);
     };
 
     const progress = ((TWENTY_FOUR_HOURS_IN_SECONDS - timeRemaining) / TWENTY_FOUR_HOURS_IN_SECONDS) * 100;
@@ -57,7 +67,7 @@ export function MiningSection() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <p className="text-sm text-center">Next claim available in:</p>
-                                <div className='relative w-[150px] h-[150px] mx-auto flex items-center justify-center'>
+                                <div className='relative w-[180px] h-[180px] mx-auto flex items-center justify-center'>
                                      <svg className="absolute w-full h-full" viewBox="0 0 36 36">
                                         <path
                                             d="M18 2.0845
@@ -78,11 +88,11 @@ export function MiningSection() {
                                             strokeLinecap="round"
                                         />
                                     </svg>
-                                    <p className="text-2xl font-bold font-mono whitespace-nowrap">{formatTime(timeRemaining)}</p>
+                                    <p className="text-3xl font-bold font-mono whitespace-nowrap">{formatTime(timeRemaining)}</p>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" disabled={!canClaim}>Claim 10 HC</Button>
+                                <Button className="w-full h-10" disabled={!canClaim} onClick={handleClaim}>Claim 10 HC</Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
