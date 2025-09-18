@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { transactions } from "@/lib/data";
 import type { Transaction } from "@/lib/types";
-import { ArrowDownLeft, ArrowUpRight, Cog, CheckSquare, Store, Users, HandCoins } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Cog, CheckSquare, Store, Users, HandCoins, Gem } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TransactionIcon = ({ type }: { type: Transaction['type'] }) => {
@@ -15,6 +15,7 @@ const TransactionIcon = ({ type }: { type: Transaction['type'] }) => {
         'marketplace-sell': <Store className="size-4 text-muted-foreground" />,
         'marketplace-buy': <Store className="size-4 text-muted-foreground" />,
         referral: <Users className="size-4 text-muted-foreground" />,
+        'nft-reward': <Gem className="size-4 text-primary" />,
     };
     return iconMap[type] || <HandCoins className="size-4 text-muted-foreground" />;
 };
@@ -32,7 +33,9 @@ const getStatusBadgeVariant = (status: Transaction['status']): "default" | "seco
 
 const isPositive = (type: Transaction['type']) => !['withdraw', 'marketplace-buy'].includes(type);
 
-export function TransactionsTable({ className }: { className?: string }) {
+export function TransactionsTable({ className, limit }: { className?: string, limit?: number }) {
+    const displayTransactions = limit ? transactions.slice(0, limit) : transactions;
+
     return (
         <Card className={cn("h-full flex flex-col rounded-2xl", className)}>
             <CardHeader>
@@ -50,7 +53,7 @@ export function TransactionsTable({ className }: { className?: string }) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {transactions.map(tx => (
+                        {displayTransactions.map(tx => (
                             <TableRow key={tx.id}>
                                 <TableCell className="pl-4"><TransactionIcon type={tx.type} /></TableCell>
                                 <TableCell className="font-medium capitalize">{tx.type.replace('-', ' ')}</TableCell>

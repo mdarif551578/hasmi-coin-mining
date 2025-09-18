@@ -1,6 +1,6 @@
 export type Transaction = {
   id: string;
-  type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral';
+  type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward';
   amount: number;
   status: 'pending' | 'completed' | 'failed';
   date: string;
@@ -26,6 +26,8 @@ export type User = {
     name: string;
     referralCode: string;
     walletBalance: number;
+    totalReferrals: number;
+    miningStatus: 'Active' | 'Inactive';
 }
 
 export type Task = {
@@ -33,3 +35,11 @@ export type Task = {
   description: string;
   reward: number;
 };
+
+export type MarketListing = {
+  id: string;
+  seller: string;
+  amount: number;
+  rate: number;
+  status: 'open' | 'sold';
+}

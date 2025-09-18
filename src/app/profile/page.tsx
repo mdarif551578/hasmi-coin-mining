@@ -1,9 +1,8 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
-import { LogOut, Shield, User as UserIcon, Star, Cog } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, Star, Cog, Activity } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/ReferralCard";
-import { MiningSection } from "@/components/dashboard/MiningSection";
 
 export default function ProfilePage() {
   return (
@@ -15,20 +14,19 @@ export default function ProfilePage() {
             <span>{user.name}</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-card/50 rounded-lg">
-                <div>
-                    <p className="text-sm text-muted-foreground">Total Referrals</p>
-                    <p className="text-2xl font-bold">12</p>
-                </div>
-                <Star className="size-8 text-primary" />
+        <CardContent className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col items-center justify-center p-4 bg-card/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Referrals</p>
+                <p className="text-2xl font-bold">{user.totalReferrals}</p>
+            </div>
+             <div className="flex flex-col items-center justify-center p-4 bg-card/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Mining Status</p>
+                <p className="text-lg font-bold text-green-400">{user.miningStatus}</p>
             </div>
         </CardContent>
       </Card>
       
       <ReferralCard />
-
-      <MiningSection />
 
       <Card className="rounded-2xl">
         <CardHeader>
@@ -36,8 +34,16 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-2">
             <Button variant="ghost" className="w-full justify-start">
+                <UserIcon className="mr-2" />
+                Account
+            </Button>
+            <Button variant="ghost" className="w-full justify-start">
                 <Shield className="mr-2" />
                 Security
+            </Button>
+             <Button variant="ghost" className="w-full justify-start">
+                <Activity className="mr-2" />
+                Activity Log
             </Button>
             <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive">
                 <LogOut className="mr-2" />

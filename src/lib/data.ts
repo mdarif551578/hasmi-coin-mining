@@ -1,9 +1,11 @@
-import type { Transaction, MiningPlan, NftPlan, User, Task } from './types';
+import type { Transaction, MiningPlan, NftPlan, User, Task, MarketListing } from './types';
 
 export const user: User = {
     name: "Hasmi",
     referralCode: "HASMI-A1B2C3",
     walletBalance: 1234.56,
+    totalReferrals: 12,
+    miningStatus: "Active",
 };
 
 export const transactions: Transaction[] = [
@@ -13,6 +15,8 @@ export const transactions: Transaction[] = [
   { id: '4', type: 'task', amount: 5, status: 'completed', date: '2024-07-19' },
   { id: '5', type: 'marketplace-sell', amount: 50, status: 'completed', date: '2024-07-18' },
   { id: '6', type: 'referral', amount: 20, status: 'completed', date: '2024-07-17' },
+  { id: '7', type: 'marketplace-buy', amount: 25, status: 'completed', date: '2024-07-16' },
+  { id: '8', type: 'nft-reward', amount: 150, status: 'completed', date: '2024-07-15' },
 ];
 
 export const paidPlans: MiningPlan[] = [
@@ -31,4 +35,11 @@ export const tasks: Task[] = [
   { id: 1, description: "Follow us on Twitter", reward: 5 },
   { id: 2, description: "Join our Telegram channel", reward: 5 },
   { id: 3, description: "Watch a tutorial video", reward: 2 },
+  { id: 4, description: "Download our partner app", reward: 10 },
+];
+
+export const marketListings: MarketListing[] = [
+    { id: 'm1', seller: 'UserA', amount: 100, rate: 0.1, status: 'open' },
+    { id: 'm2', seller: 'UserB', amount: 250, rate: 0.11, status: 'open' },
+    { id: 'm3', seller: 'UserC', amount: 50, rate: 0.09, status: 'sold' },
 ];
