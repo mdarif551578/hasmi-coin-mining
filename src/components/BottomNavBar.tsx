@@ -24,7 +24,6 @@ export function BottomNavBar() {
   }, []);
 
   if (!isClient) {
-    // Render a placeholder on the server to prevent hydration mismatch
     return (
       <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-card border-t border-border/50">
         <div className="grid h-full max-w-lg grid-cols-6 mx-auto font-medium" />
@@ -40,7 +39,8 @@ export function BottomNavBar() {
             key={item.href}
             href={item.href}
             className={cn(
-              "inline-flex flex-col items-center justify-center px-5 hover:bg-accent/50 group transition-colors h-full text-xs",
+              "inline-flex flex-col items-center justify-center px-5 hover:bg-accent/50 group transition-colors h-full",
+              "text-xs",
               pathname === item.href
                 ? "text-primary"
                 : "text-muted-foreground"

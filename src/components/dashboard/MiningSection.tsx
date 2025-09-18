@@ -39,15 +39,15 @@ export function MiningSection() {
     return (
         <Card className="rounded-2xl w-full">
             <CardHeader>
-                <CardTitle className="text-lg">Mining Center</CardTitle>
+                <CardTitle>Mining Center</CardTitle>
                 <CardDescription>Claim rewards and upgrade your mining capabilities.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="free" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 text-xs h-auto">
-                        <TabsTrigger value="free" className="py-2 gap-1"><Zap className="size-4" />Free</TabsTrigger>
-                        <TabsTrigger value="paid" className="py-2 gap-1"><ShoppingCart className="size-4" />Paid</TabsTrigger>
-                        <TabsTrigger value="nft" className="py-2 gap-1"><Gem className="size-4" />NFT</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3 h-auto">
+                        <TabsTrigger value="free" className="py-2 gap-1 text-xs"><Zap className="size-4" />Free</TabsTrigger>
+                        <TabsTrigger value="paid" className="py-2 gap-1 text-xs"><ShoppingCart className="size-4" />Paid</TabsTrigger>
+                        <TabsTrigger value="nft" className="py-2 gap-1 text-xs"><Gem className="size-4" />NFT</TabsTrigger>
                     </TabsList>
                     <TabsContent value="free" className="mt-4">
                         <Card className="bg-card-foreground/5">
@@ -57,7 +57,7 @@ export function MiningSection() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <p className="text-sm text-center">Next claim available in:</p>
-                                <div className='relative w-[100px] h-[100px] md:w-[120px] md:h-[120px] mx-auto flex items-center justify-center'>
+                                <div className='relative w-[100px] h-[100px] mx-auto flex items-center justify-center'>
                                      <svg className="absolute w-full h-full" viewBox="0 0 36 36">
                                         <path
                                             d="M18 2.0845
@@ -78,11 +78,11 @@ export function MiningSection() {
                                             strokeLinecap="round"
                                         />
                                     </svg>
-                                    <p className="text-xl md:text-2xl font-bold font-mono whitespace-nowrap">{formatTime(timeRemaining)}</p>
+                                    <p className="text-xl font-bold font-mono whitespace-nowrap">{formatTime(timeRemaining)}</p>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full h-10 md:h-11" disabled={!canClaim}>Claim 10 HC</Button>
+                                <Button className="w-full" disabled={!canClaim}>Claim 10 HC</Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
@@ -95,11 +95,11 @@ export function MiningSection() {
                                         <CardDescription>{plan.duration}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-2 flex-1">
-                                        <p className="font-bold text-sm md:text-base">{plan.rate}</p>
-                                        <p className="text-lg md:text-xl font-bold font-headline text-primary">${plan.price}</p>
+                                        <p className="font-bold text-sm">{plan.rate}</p>
+                                        <p className="text-lg font-bold text-primary">${plan.price}</p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-10 md:h-11">Subscribe</Button>
+                                        <Button className="w-full h-10">Subscribe</Button>
                                     </CardFooter>
                                 </Card>
                             ))}
@@ -118,7 +118,7 @@ export function MiningSection() {
                                         <p>Return: <span className="font-bold text-primary">${plan.profit}</span></p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-10 md:h-11">Purchase</Button>
+                                        <Button className="w-full h-10">Purchase</Button>
                                     </CardFooter>
                                 </Card>
                             ))}

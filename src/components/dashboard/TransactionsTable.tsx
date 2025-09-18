@@ -39,7 +39,7 @@ export function TransactionsTable({ className, limit }: { className?: string, li
     return (
         <Card className={cn("h-full flex flex-col rounded-2xl", className)}>
             <CardHeader>
-                <CardTitle className="text-lg">Recent Transactions</CardTitle>
+                <CardTitle>Recent Transactions</CardTitle>
                 <CardDescription>A log of your recent wallet activity.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-0">
@@ -56,15 +56,15 @@ export function TransactionsTable({ className, limit }: { className?: string, li
                         <TableBody>
                             {displayTransactions.map(tx => (
                                 <TableRow key={tx.id}>
-                                    <TableCell className="pl-4"><TransactionIcon type={tx.type} /></TableCell>
-                                    <TableCell className="font-medium capitalize text-sm">{tx.type.replace('-', ' ')}</TableCell>
+                                    <TableCell className="pl-4 py-2"><TransactionIcon type={tx.type} /></TableCell>
+                                    <TableCell className="font-medium capitalize text-sm py-2">{tx.type.replace('-', ' ')}</TableCell>
                                     <TableCell className={cn(
-                                        "font-semibold text-sm",
+                                        "font-semibold text-sm py-2",
                                         isPositive(tx.type) ? "text-green-400" : "text-red-400"
                                     )}>
                                         {isPositive(tx.type) ? '+' : '-'}{tx.amount.toFixed(2)} HC
                                     </TableCell>
-                                    <TableCell className="text-right pr-4">
+                                    <TableCell className="text-right pr-4 py-2">
                                         <Badge variant={getStatusBadgeVariant(tx.status)} className="capitalize text-xs">{tx.status}</Badge>
                                     </TableCell>
                                 </TableRow>

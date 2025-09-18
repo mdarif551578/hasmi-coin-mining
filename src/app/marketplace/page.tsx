@@ -8,7 +8,7 @@ export default function MarketplacePage() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-lg md:text-xl font-bold">P2P Marketplace</h1>
+        <h1 className="text-xl font-bold">P2P Marketplace</h1>
         <Button size="sm">
           <Plus className="mr-2" />
           Create Offer
@@ -17,7 +17,7 @@ export default function MarketplacePage() {
 
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-lg">Open Sell Offers</CardTitle>
+          <CardTitle>Open Sell Offers</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -33,10 +33,10 @@ export default function MarketplacePage() {
               <TableBody>
                 {marketListings.filter(l => l.status === 'open').map(listing => (
                   <TableRow key={listing.id}>
-                    <TableCell className="pl-4">{listing.seller}</TableCell>
-                    <TableCell>{listing.amount.toLocaleString()}</TableCell>
-                    <TableCell>${listing.rate.toFixed(3)}</TableCell>
-                    <TableCell className="text-right pr-4">
+                    <TableCell className="pl-4 py-2">{listing.seller}</TableCell>
+                    <TableCell className="py-2">{listing.amount.toLocaleString()}</TableCell>
+                    <TableCell className="py-2">${listing.rate.toFixed(3)}</TableCell>
+                    <TableCell className="text-right pr-4 py-2">
                       <Button size="sm" className="h-8 px-2 text-xs">Buy</Button>
                     </TableCell>
                   </TableRow>

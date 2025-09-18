@@ -9,9 +9,9 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       router.push("/dashboard");
-    }, 3000); // 3-second delay
+    }, 3000); 
 
-    return () => clearTimeout(timer); // Cleanup the timer on component unmount
+    return () => clearTimeout(timer); 
   }, [router]);
 
   return (

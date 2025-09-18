@@ -8,7 +8,7 @@ export default function TasksPage() {
     <div className="p-4 md:p-6">
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-lg">Tasks & Earn</CardTitle>
+          <CardTitle>Tasks & Earn</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {tasks.map(task => (

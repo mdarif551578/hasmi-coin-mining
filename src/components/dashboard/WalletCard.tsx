@@ -12,7 +12,7 @@ export function WalletCard({ className }: { className?: string }) {
                 <Wallet className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl md:text-3xl font-bold font-headline">{user.walletBalance.toLocaleString()} HC</div>
+                <div className="text-2xl md:text-3xl font-bold">{user.walletBalance.toLocaleString()} HC</div>
                 <p className="text-xs text-muted-foreground">Hasmi Coin</p>
             </CardContent>
             <CardFooter className="gap-2 flex-col sm:flex-row">
