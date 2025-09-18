@@ -1,8 +1,9 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
-import { LogOut, Shield, User as UserIcon, Star, Cog, Activity } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, Cog, Activity } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/ReferralCard";
+import { MiningStatusCard } from "@/components/dashboard/MiningStatusCard";
 
 export default function ProfilePage() {
   return (
@@ -16,17 +17,18 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
             <div className="flex flex-col items-center justify-center p-4 bg-card/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">Referrals</p>
-                <p className="text-2xl font-bold">{user.totalReferrals}</p>
+                <p className="text-sm text-muted-foreground">Wallet Balance</p>
+                <p className="text-2xl font-bold">{user.walletBalance.toLocaleString()} HC</p>
             </div>
              <div className="flex flex-col items-center justify-center p-4 bg-card/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">Mining Status</p>
-                <p className="text-lg font-bold text-green-400">{user.miningStatus}</p>
+                <p className="text-sm text-muted-foreground">Referrals</p>
+                <p className="text-2xl font-bold">{user.totalReferrals}</p>
             </div>
         </CardContent>
       </Card>
       
       <ReferralCard />
+      <MiningStatusCard />
 
       <Card className="rounded-2xl">
         <CardHeader>

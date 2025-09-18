@@ -17,13 +17,13 @@ export function MiningSection() {
     }, []);
 
     return (
-        <Card className="rounded-2xl">
+        <Card className="rounded-2xl w-full">
             <CardHeader>
                 <CardTitle>Mining Center</CardTitle>
                 <CardDescription>Claim rewards and upgrade your mining capabilities.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="free">
+                <Tabs defaultValue="free" className="w-full">
                     <TabsList className="grid w-full grid-cols-3 text-xs h-auto">
                         <TabsTrigger value="free" className="py-2"><Zap className="mr-1 md:mr-2 size-4" />Free</TabsTrigger>
                         <TabsTrigger value="paid" className="py-2"><ShoppingCart className="mr-1 md:mr-2 size-4" />Paid Plans</TabsTrigger>
@@ -37,8 +37,29 @@ export function MiningSection() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <p>Next claim available in:</p>
-                                <Progress value={progress} className="w-full" />
-                                <p className="text-sm text-center text-muted-foreground">15h 47m 12s</p>
+                                <div className='relative w-full h-[120px] flex items-center justify-center'>
+                                     <svg className="absolute w-full h-full" viewBox="0 0 36 36">
+                                        <path
+                                            d="M18 2.0845
+                                            a 15.9155 15.9155 0 0 1 0 31.831
+                                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            className="stroke-current text-secondary"
+                                            fill="none"
+                                            strokeWidth="2"
+                                        />
+                                        <path
+                                            d="M18 2.0845
+                                            a 15.9155 15.9155 0 0 1 0 31.831
+                                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            className="stroke-current text-primary"
+                                            fill="none"
+                                            strokeWidth="2"
+                                            strokeDasharray={`${progress}, 100`}
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                    <p className="text-3xl font-bold">15:47:12</p>
+                                </div>
                             </CardContent>
                             <CardFooter>
                                 <Button className="w-full h-12" disabled>Claim 10 HC</Button>
