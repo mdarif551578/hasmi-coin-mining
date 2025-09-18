@@ -17,14 +17,14 @@ export function BottomNavBar() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-card border-t border-border">
+    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-card border-t border-border/50">
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "inline-flex flex-col items-center justify-center px-5 hover:bg-muted group",
+              "inline-flex flex-col items-center justify-center px-5 hover:bg-accent/50 group transition-colors",
               pathname === item.href
                 ? "text-primary"
                 : "text-muted-foreground"
