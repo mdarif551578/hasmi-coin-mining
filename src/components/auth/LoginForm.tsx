@@ -23,7 +23,7 @@ import { auth } from "@/lib/firebase";
 import { fetchSignInMethodsForEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Eye, EyeOff, Mail } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -223,7 +223,7 @@ export function LoginForm() {
           </form>
         </Form>
 
-        {step !== 'password' && (
+        {(step !== 'email' && step !== 'password') && (
             <Button variant="link" size="sm" className="px-0 mt-2" onClick={() => setStep('email')}>
                 Use another email
             </Button>

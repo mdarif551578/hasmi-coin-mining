@@ -67,34 +67,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    const processAuth = async () => {
+      // Set loading to true at the beginning of the auth process
+      setLoading(true);
+
       try {
+        // First, handle any pending redirect results from Google Sign-In
         const result = await getRedirectResult(auth);
         if (result) {
+          // A user has successfully signed in via redirect
           await createUserDocument(result.user);
+          setUser(result.user);
         }
       } catch (error) {
-        console.error("Google sign-in redirect error:", error);
-      } finally {
-        // This check is important to set loading to false only when auth state is also determined
-        if (auth.currentUser !== null || user === null) {
-            setLoading(false);
+        console.error("Error processing redirect result:", error);
+      }
+      
+      // Set up the onAuthStateChanged listener. This will also fire after a redirect.
+      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+          await createUserDocument(currentUser);
+          setUser(currentUser);
+        } else {
+          setUser(null);
         }
-      }
+        // Once the listener has given us the definitive state, we can stop loading.
+        setLoading(false);
+      });
+
+      return unsubscribe;
     };
-    
-    handleRedirectResult();
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        await createUserDocument(user);
-      }
-      setLoading(false);
-    });
+    const unsubscribePromise = processAuth();
 
-
-    return () => unsubscribe();
+    return () => {
+      unsubscribePromise.then(unsubscribe => {
+        if (unsubscribe) unsubscribe();
+      });
+    };
   }, []);
 
   return (
@@ -129,8 +139,6 @@ export const signIn = async (email:string, password: string): Promise<{ error?: 
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
-    // Set loading to true before redirect to show loading indicator on return
-    // This is handled by the overall loading state in the provider
     await signInWithRedirect(auth, provider);
     return {};
   } catch (error) {
