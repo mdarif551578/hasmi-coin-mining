@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
 import { LogOut, Shield, User as UserIcon, Activity } from "lucide-react";
+import Link from "next/link";
 
 export default function ProfilePage() {
   return (
@@ -45,9 +46,11 @@ export default function ProfilePage() {
                 <Activity />
                 Activity Log
             </Button>
-            <Button variant="ghost" className="w-full justify-start gap-2 h-11 text-destructive hover:text-destructive">
-                <LogOut />
-                Logout
+            <Button asChild variant="ghost" className="w-full justify-start gap-2 h-11 text-destructive hover:text-destructive">
+                <Link href="/login">
+                  <LogOut />
+                  Logout
+                </Link>
             </Button>
         </CardContent>
       </Card>

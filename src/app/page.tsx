@@ -7,11 +7,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push("/dashboard");
-    }, 3000); 
-
-    return () => clearTimeout(timer); 
+    // Immediately redirect to login, as auth is now required.
+    router.push("/login");
   }, [router]);
 
   return (
