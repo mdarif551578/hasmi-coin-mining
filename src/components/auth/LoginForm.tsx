@@ -203,8 +203,8 @@ export function LoginForm() {
             
             {step === 'google_auth' && (
                 <div className="p-4 text-center bg-muted/50 rounded-lg">
-                    <p className="text-sm font-semibold">This email is registered with Google.</p>
-                    <p className="text-sm">Please sign in using the Google button below.</p>
+                    <p className="text-sm font-semibold">This email is linked to a Google account.</p>
+                    <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below to proceed.</p>
                 </div>
             )}
             {step === 'not_found' && (
@@ -251,5 +251,7 @@ export function LoginForm() {
     </Card>
   );
 }
+
+    
 
     
