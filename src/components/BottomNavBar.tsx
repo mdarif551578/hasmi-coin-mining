@@ -1,15 +1,16 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Cog, CheckSquare, Store, User } from "lucide-react";
+import { LayoutDashboard, Repeat, CheckSquare, Store, User, Cog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
   { href: "/mining", icon: Cog, label: "Mine" },
-  { href: "/tasks", icon: CheckSquare, label: "Tasks" },
+  { href: "/exchange", icon: Repeat, label: "Exchange" },
   { href: "/marketplace", icon: Store, label: "Market" },
   { href: "/profile", icon: User, label: "Profile" },
 ];

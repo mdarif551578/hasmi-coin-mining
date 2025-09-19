@@ -1,3 +1,4 @@
+
 "use client";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,9 +32,11 @@ export function WalletCard({ className }: { className?: string }) {
                         Deposit USD
                     </Link>
                 </Button>
-                <Button variant="secondary" size="sm" className="w-full h-9">
-                    <Repeat className="mr-2" />
-                    Exchange
+                <Button variant="secondary" size="sm" className="w-full h-9" asChild>
+                    <Link href="/exchange">
+                        <Repeat className="mr-2" />
+                        Exchange
+                    </Link>
                 </Button>
             </CardFooter>
         </Card>
