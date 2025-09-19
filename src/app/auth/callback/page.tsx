@@ -10,7 +10,7 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    // We wait for the loading to be false.
+    // We wait for the loading to be false, which indicates auth state has been checked.
     if (!loading) {
       // If the user object is available, redirect to the dashboard.
       if (user) {

@@ -5,7 +5,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   signInWithRedirect,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
@@ -68,23 +67,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const processAuth = async () => {
-      setLoading(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // User signed in via redirect.
+          // User signed in via redirect. Create their document if it doesn't exist.
           await createUserDocument(result.user);
-          // The onAuthStateChanged listener will handle setting the user.
         }
       } catch (error) {
         console.error("Error processing redirect result:", error);
-      } finally {
-         // The onAuthStateChanged listener is the single source of truth.
-         // It will set the user and setLoading(false) once the state is definitive.
       }
       
+      // onAuthStateChanged will handle setting the user state and is the single source of truth.
       const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
+          // Ensure user document exists on any auth state change, just in case.
           await createUserDocument(currentUser);
           setUser(currentUser);
         } else {
@@ -118,7 +114,7 @@ export const signUp = async (name: string, email:string, password: string): Prom
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
-    // createUserDocument is now called from onAuthStateChanged
+    // createUserDocument is now called from onAuthStateChanged/redirect handler
     return {};
   } catch (error) {
     return { error };
@@ -128,10 +124,12 @@ export const signUp = async (name: string, email:string, password: string): Prom
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
-    // This will start the redirect flow.
+    // signInWithRedirect is better for mobile web and avoids popup issues.
     await signInWithRedirect(auth, provider);
+    // The user will be redirected. The result is handled by getRedirectResult in AuthProvider.
     return {};
   } catch (error) {
+    console.error("Google sign-in redirect error:", error);
     return { error };
   }
 };
@@ -154,4 +152,3 @@ export const resetPassword = async (email: string): Promise<{ error?: any }> => 
         return { error };
     }
 }
-    
