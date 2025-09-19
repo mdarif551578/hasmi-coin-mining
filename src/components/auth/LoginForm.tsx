@@ -78,9 +78,20 @@ export function LoginForm() {
       }
 
       console.log("Other provider detected");
-      return "google_auth"; // Or create a new step for other providers
-    } catch (error: any) {
+      return "google_auth"; // Fallback for other providers
+  } catch (error: any) {
       console.error("Error checking account type:", error);
+      // This can happen if email enumeration protection is on.
+      // In that case, we can't know the account type on the client.
+      // We will default to a generic 'password' step and let the sign-in attempt handle it.
+       if (error.code === 'auth/operation-not-allowed') {
+         toast({
+            title: "Advanced Login Active",
+            description: "Please enter your password. If you use Google, use the Google Sign-In button.",
+            variant: "default",
+        });
+        return "password"; // Proceed to password step and let the backend decide
+      }
       return "not_found";
     }
   }
@@ -98,7 +109,7 @@ export function LoginForm() {
       const accountType = await checkAccountType(email);
       setStep(accountType);
     } catch (error) {
-      console.error("Error checking account type:", error);
+      console.error("Error during handleContinue:", error);
       toast({
         title: "Error",
         description: "Could not verify email. Please try again.",
@@ -136,7 +147,7 @@ export function LoginForm() {
       } else {
         toast({
           title: "Login Failed",
-          description: error.message || "Please try again.",
+          description: "This email may be linked to Google. Please try the 'Sign in with Google' button.",
           variant: "destructive",
         });
       }

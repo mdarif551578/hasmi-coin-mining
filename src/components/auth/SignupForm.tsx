@@ -64,31 +64,51 @@ export function SignupForm() {
     const { name, email, password } = values;
 
     try {
-      const methods = await fetchSignInMethodsForEmail(auth, email);
-      if (methods.length > 0) {
-        setEmailInUse(true);
-        setIsLoading(false);
-        return;
-      }
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if (methods.length > 0) {
+            setEmailInUse(true);
+            setIsLoading(false);
+            toast({
+                title: "Email Already Registered",
+                description: "This email is already in use. Please sign in instead.",
+                variant: "destructive"
+            });
+            return;
+        }
     } catch (error) {
-       toast({
-        title: "Error",
-        description: "Could not verify email. Please try again.",
-        variant: "destructive"
-      });
-      setIsLoading(false);
-      return;
+        if ((error as any).code === 'auth/operation-not-allowed') {
+            // This error can occur if Email Enumeration Protection is on.
+            // We can't know for sure, so we proceed with the signup attempt
+            // and let Firebase's backend rules handle it.
+        } else {
+            toast({
+                title: "Error",
+                description: "Could not verify email. Please try again.",
+                variant: "destructive"
+            });
+            setIsLoading(false);
+            return;
+        }
     }
-
 
     const { error } = await signUp(name, email, password);
 
     if (error) {
-      toast({
-        title: "Signup Failed",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
+        const firebaseError = error as any;
+        if (firebaseError.code === 'auth/email-already-in-use') {
+             setEmailInUse(true);
+             toast({
+                title: "Email Already Registered",
+                description: "This email is already in use. Please sign in instead.",
+                variant: "destructive"
+            });
+        } else {
+            toast({
+                title: "Signup Failed",
+                description: firebaseError.message,
+                variant: "destructive",
+            });
+        }
     } else {
       router.push('/dashboard');
     }
