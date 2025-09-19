@@ -22,6 +22,8 @@ import { signUp, signInWithGoogle } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { fetchSignInMethodsForEmail } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -45,6 +47,7 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailInUse, setEmailInUse] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -57,7 +60,27 @@ export function SignupForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    setEmailInUse(false);
     const { name, email, password } = values;
+
+    try {
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      if (methods.length > 0) {
+        setEmailInUse(true);
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+       toast({
+        title: "Error",
+        description: "Could not verify email. Please try again.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+
+
     const { error } = await signUp(name, email, password);
 
     if (error) {
@@ -89,6 +112,14 @@ export function SignupForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {emailInUse && (
+              <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
+                <p className="text-sm font-semibold">This email is already registered.</p>
+                <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
+                  <Link href="/login">Would you like to sign in instead?</Link>
+                </Button>
+              </div>
+            )}
             <FormField
               control={form.control}
               name="name"
@@ -109,7 +140,10 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="you@example.com" {...field} disabled={isAnyLoading} />
+                    <Input placeholder="you@example.com" {...field} disabled={isAnyLoading} onChange={(e) => {
+                      field.onChange(e);
+                      setEmailInUse(false);
+                    }}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -108,12 +108,15 @@ export function LoginForm() {
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
-    // This will start the redirect flow. The user will be redirected
-    // and the AuthProvider will handle the result.
     await signInWithGoogle();
   }
 
   const isAnyLoading = isLoading || isGoogleLoading;
+
+  const resetForm = () => {
+    form.reset();
+    setStep('email');
+  }
 
   return (
     <Card className="rounded-2xl shadow-lg">
@@ -205,8 +208,8 @@ export function LoginForm() {
                 </div>
             )}
             {step === 'not_found' && (
-                 <div className="p-4 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
-                    <p className="text-sm">No account found with this email.</p>
+                 <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
+                    <p className="text-sm font-semibold">No account found with this email.</p>
                     <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
                         <Link href="/signup">Would you like to sign up?</Link>
                     </Button>
@@ -217,7 +220,7 @@ export function LoginForm() {
         </Form>
 
         {(step !== 'email' && step !== 'password') && (
-            <Button variant="link" size="sm" className="px-0 mt-2" onClick={() => setStep('email')}>
+            <Button variant="link" size="sm" className="px-0 mt-2" onClick={resetForm}>
                 Use another email
             </Button>
         )}
