@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { Providers } from './providers';
+import { AuthProvider } from '@/lib/auth';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -20,10 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={cn("font-body antialiased", inter.variable)}>
-        <Providers>
-          {children}
-          <Toaster />
-        </Providers>
+        <AuthProvider>
+          <Providers>
+            {children}
+            <Toaster />
+          </Providers>
+        </AuthProvider>
       </body>
     </html>
   );

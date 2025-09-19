@@ -17,6 +17,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
+import { signIn, signInWithGoogle } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -35,6 +38,9 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export function LoginForm() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -43,10 +49,35 @@ export function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Here you would handle authentication
-    router.push('/dashboard');
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    const { email, password } = values;
+    const { error } = await signIn(email, password);
+    if (error) {
+      toast({
+        title: "Login Failed",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    } else {
+      router.push('/dashboard');
+    }
+    setIsLoading(false);
+  }
+
+  async function handleGoogleSignIn() {
+    setIsLoading(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+       toast({
+        title: "Login Failed",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    } else {
+       router.push('/dashboard');
+    }
+    setIsLoading(false);
   }
 
   return (
@@ -65,7 +96,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="you@example.com" {...field} />
+                    <Input placeholder="you@example.com" {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -78,7 +109,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
                   </FormControl>
                    <div className="text-right">
                      <Button asChild variant="link" size="sm" className="px-0 h-auto">
@@ -89,7 +120,7 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full h-10">Sign In</Button>
+            <Button type="submit" className="w-full h-10" disabled={isLoading}>{isLoading ? 'Signing In...' : 'Sign In'}</Button>
           </form>
         </Form>
         <div className="relative my-6">
@@ -99,7 +130,7 @@ export function LoginForm() {
             </div>
         </div>
         <div className="space-y-3">
-             <Button variant="outline" className="w-full h-10">
+             <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isLoading}>
                 <GoogleIcon className="mr-2" />
                 Sign in with Google
             </Button>
