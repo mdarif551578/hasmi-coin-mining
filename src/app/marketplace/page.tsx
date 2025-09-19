@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { marketListings, user } from "@/lib/data";
-import { Plus, Coins, Repeat } from "lucide-react";
+import { Plus, Repeat } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -50,15 +50,15 @@ export default function MarketplacePage() {
         <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
                 <Link href="/exchange">
-                    <Repeat className="mr-2"/>
+                    <Repeat className="size-4 mr-1" />
                     Exchange
                 </Link>
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button size="sm">
-                <Plus />
-                Create Offer
+                <Plus className="size-4 mr-1" />
+                Create
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
