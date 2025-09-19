@@ -3,15 +3,16 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { user as staticUser } from "@/lib/data";
 import { LogOut, Shield, User as UserIcon, Activity } from "lucide-react";
-import Link from "next/link";
 import { useAuth, signOut } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { useUserData } from "@/hooks/use-user-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { userData, loading } = useUserData();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -20,7 +21,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
        <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold">Profile</h1>
        </div>
@@ -28,18 +29,27 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserIcon className="size-5 text-primary" />
-            <span>{user?.displayName || staticUser.name}</span>
+            <span>{user?.displayName || "User"}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
-                <p className="text-xs text-muted-foreground">HC Balance</p>
-                <p className="text-lg font-bold">{staticUser.walletBalance.toLocaleString()} <span className="text-sm font-normal">HC</span></p>
-            </div>
-             <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
-                <p className="text-xs text-muted-foreground">USD Balance</p>
-                <p className="text-lg font-bold">${staticUser.usdBalance.toFixed(2)}</p>
-            </div>
+            {loading ? (
+              <>
+                <Skeleton className="h-[76px] w-full" />
+                <Skeleton className="h-[76px] w-full" />
+              </>
+            ) : (
+               <>
+                <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
+                    <p className="text-xs text-muted-foreground">HC Balance</p>
+                    <p className="text-lg font-bold">{(userData?.wallet_balance || 0).toLocaleString()} <span className="text-sm font-normal">HC</span></p>
+                </div>
+                 <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
+                    <p className="text-xs text-muted-foreground">USD Balance</p>
+                    <p className="text-lg font-bold">${(userData?.usd_balance || 0).toFixed(2)}</p>
+                </div>
+               </>
+            )}
         </CardContent>
       </Card>
 

@@ -14,7 +14,8 @@ import {
   getRedirectResult,
   User,
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -23,6 +24,43 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
+// Function to generate a random referral code
+const generateReferralCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `HASMI-${code}`;
+};
+
+const createUserDocument = async (user: User) => {
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+        const { email, displayName, uid } = user;
+        const referralCode = generateReferralCode();
+        
+        try {
+            await setDoc(userDocRef, {
+                email,
+                displayName: displayName || 'User',
+                phone: '',
+                wallet_balance: 0,
+                usd_balance: 0,
+                referral_code: referralCode,
+                referred_by: null,
+                role: 'user',
+                last_claim: null,
+                createdAt: new Date(),
+            });
+        } catch (error) {
+            console.error("Error creating user document:", error);
+        }
+    }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,22 +68,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (user) {
+        createUserDocument(user);
+      }
       setLoading(false);
     });
 
-    // Handle the redirect result
     getRedirectResult(auth)
       .then((result) => {
         if (result) {
-          // This is the signed-in user
           const user = result.user;
-          // You can also get the Google Access Token if you need it.
-          // const credential = GoogleAuthProvider.credentialFromResult(result);
-          // const token = credential?.accessToken;
+          createUserDocument(user);
         }
       })
       .catch((error) => {
-        // Handle Errors here.
         console.error("Google sign-in redirect error:", error);
       }).finally(() => {
          setLoading(false);
@@ -67,6 +103,7 @@ export const signUp = async (name: string, email:string, password: string): Prom
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
+    // The user document is now created by the onAuthStateChanged listener
     return {};
   } catch (error) {
     return { error };
