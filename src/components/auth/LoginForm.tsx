@@ -157,7 +157,7 @@ export function LoginForm() {
                 name="password"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Please enter your password to continue.</FormLabel>
                     <FormControl>
                         <div className="relative">
                         <Input
@@ -203,8 +203,8 @@ export function LoginForm() {
             
             {step === 'google_auth' && (
                 <div className="p-4 text-center bg-muted/50 rounded-lg">
-                    <p className="text-sm">This email is registered with Google.</p>
-                    <p className="text-sm font-semibold">Please sign in using the Google button below.</p>
+                    <p className="text-sm font-semibold">This email is registered with Google.</p>
+                    <p className="text-sm">Please sign in using the Google button below.</p>
                 </div>
             )}
             {step === 'not_found' && (
@@ -219,8 +219,8 @@ export function LoginForm() {
           </form>
         </Form>
 
-        {(step !== 'email' && step !== 'password') && (
-            <Button variant="link" size="sm" className="px-0 mt-2" onClick={resetForm}>
+        {(step !== 'email') && (
+            <Button variant="link" size="sm" className="px-0 mt-2" onClick={resetForm} disabled={isAnyLoading}>
                 Use another email
             </Button>
         )}
