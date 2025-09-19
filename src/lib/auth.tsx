@@ -125,20 +125,10 @@ export const signUp = async (name: string, email:string, password: string): Prom
   }
 };
 
-export const signIn = async (email:string, password: string): Promise<{ error?: any }> => {
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    return {};
-  } catch (error) {
-    return { error };
-  }
-};
-
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
     // This will start the redirect flow.
-    // The user will be sent to the /auth/callback page on success.
     await signInWithRedirect(auth, provider);
     return {};
   } catch (error) {
@@ -164,3 +154,5 @@ export const resetPassword = async (email: string): Promise<{ error?: any }> => 
         return { error };
     }
 }
+
+    

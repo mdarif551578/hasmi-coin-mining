@@ -17,9 +17,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
-import { signIn, signInWithGoogle } from "@/lib/auth";
+import { signInWithGoogle } from "@/lib/auth";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
@@ -29,7 +29,7 @@ const formSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
-type Step = "email" | "password" | "both_options";
+type Step = "email" | "password" | "google_auth" | "not_found";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -47,7 +47,6 @@ export function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<Step>("email");
-  const [userEmail, setUserEmail] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,6 +55,46 @@ export function LoginForm() {
       password: "",
     },
   });
+
+  async function checkAccountType(email: string): Promise<Step> {
+    // Method 1: Try a dummy password sign-in to detect account type
+    try {
+      await signInWithEmailAndPassword(auth, email, "dummy-password-that-will-fail");
+      // This should never succeed
+      return "password";
+    } catch (error: any) {
+      console.log("Password check error:", error.code);
+      
+      if (error.code === 'auth/wrong-password') {
+        // Account exists with password auth
+        return "password";
+      } else if (error.code === 'auth/user-not-found') {
+        // Try Method 2: Attempt to create account to see if it conflicts
+        try {
+          await createUserWithEmailAndPassword(auth, email, "dummy-password-for-detection");
+          // If this succeeds, the email was truly available
+          // Delete the dummy account immediately
+          if (auth.currentUser) {
+            await auth.currentUser.delete();
+          }
+          return "not_found";
+        } catch (createError: any) {
+          console.log("Create account error:", createError.code);
+          
+          if (createError.code === 'auth/email-already-in-use') {
+            // Email exists but not with password - likely Google
+            return "google_auth";
+          }
+          return "not_found";
+        }
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-disabled') {
+        // These often indicate the account exists but uses a different provider
+        return "google_auth";
+      }
+      
+      return "not_found";
+    }
+  }
 
   async function handleContinue() {
     setIsLoading(true);
@@ -66,44 +105,41 @@ export function LoginForm() {
       return;
     }
 
-    setUserEmail(email);
-    
-    // Instead of trying to detect the auth method, show both options
-    // This is more reliable and user-friendly
-    setStep("both_options");
-    setIsLoading(false);
+    try {
+      console.log(`Checking account type for email: ${email}`);
+      const accountType = await checkAccountType(email);
+      console.log(`Detected account type: ${accountType}`);
+      setStep(accountType);
+    } catch (error) {
+      console.error("Error checking account type:", error);
+      toast({
+        title: "Error",
+        description: "Could not verify email. Please try again or use 'Sign in with Google'.",
+        variant: "destructive"
+      });
+      // Default to showing not found
+      setStep("not_found");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (step !== 'password' && step !== 'both_options') return;
+    if (step !== 'password') return;
 
     setIsLoading(true);
     const { email, password } = values;
     
     try {
-      // Try signing in with email/password directly
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/dashboard');
     } catch (error: any) {
-      console.error("Email/password sign-in error:", error);
+      console.error("Sign-in error:", error);
       
-      // Handle specific error cases
-      if (error.code === 'auth/user-not-found') {
-        toast({
-          title: "Account not found",
-          description: "No account exists with this email and password. Try signing in with Google or sign up for a new account.",
-          variant: "destructive",
-        });
-      } else if (error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/wrong-password') {
         toast({
           title: "Incorrect password",
           description: "The password you entered is incorrect. Please try again.",
-          variant: "destructive",
-        });
-      } else if (error.code === 'auth/invalid-credential') {
-        toast({
-          title: "Invalid credentials",
-          description: "This email might be linked to a Google account. Try signing in with Google instead.",
           variant: "destructive",
         });
       } else if (error.code === 'auth/too-many-requests') {
@@ -115,7 +151,7 @@ export function LoginForm() {
       } else {
         toast({
           title: "Login Failed",
-          description: error.message || "An unexpected error occurred. Please try again.",
+          description: error.message || "Please try again.",
           variant: "destructive",
         });
       }
@@ -133,6 +169,11 @@ export function LoginForm() {
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
+      toast({
+        title: "Google Sign-In Failed",
+        description: "Could not sign in with Google. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsGoogleLoading(false);
     }
@@ -143,7 +184,6 @@ export function LoginForm() {
   const resetForm = () => {
     form.reset();
     setStep('email');
-    setUserEmail("");
   }
 
   return (
@@ -179,13 +219,13 @@ export function LoginForm() {
               )}
             />
 
-            {(step === "password" || step === "both_options") && (
+            {step === "password" && (
               <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Please enter your password to continue.</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -193,7 +233,7 @@ export function LoginForm() {
                           placeholder="••••••••"
                           {...field}
                           disabled={isAnyLoading}
-                          autoFocus={step === "password"}
+                          autoFocus
                         />
                         <Button
                           type="button"
@@ -223,10 +263,25 @@ export function LoginForm() {
               </Button>
             )}
 
-            {(step === 'password' || step === 'both_options') && (
+            {step === 'password' && (
               <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>
-                {isLoading ? 'Signing In...' : 'Sign In with Password'}
+                {isLoading ? 'Signing In...' : 'Sign In'}
               </Button>
+            )}
+            
+            {step === 'google_auth' && (
+              <div className="p-4 text-center bg-muted/50 rounded-lg">
+                <p className="text-sm font-semibold">This email is linked to a Google account.</p>
+                <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below to proceed.</p>
+              </div>
+            )}
+            {step === 'not_found' && (
+              <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
+                <p className="text-sm font-semibold">No account found with this email.</p>
+                <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
+                  <Link href="/signup">Would you like to sign up?</Link>
+                </Button>
+              </div>
             )}
             
           </form>
@@ -238,24 +293,12 @@ export function LoginForm() {
           </Button>
         )}
         
-        {(step === 'both_options' || step === 'password') && (
-          <div className="relative my-6">
-            <Separator />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
-            </div>
+        <div className="relative my-6">
+          <Separator />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
           </div>
-        )}
-
-        {step === 'email' && (
-          <div className="relative my-6">
-            <Separator />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
-            </div>
-          </div>
-        )}
-        
+        </div>
         <div className="space-y-3">
           <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
             {isGoogleLoading ? 'Redirecting...' : (
@@ -266,18 +309,6 @@ export function LoginForm() {
             )}
           </Button>
         </div>
-
-        {step === 'both_options' && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Signing in as:</strong> {userEmail}
-            </p>
-            <p className="text-xs text-blue-600 mt-1">
-              Choose your preferred sign-in method above. If this email is linked to Google, use "Sign in with Google".
-            </p>
-          </div>
-        )}
-
         <div className="mt-6 text-center text-sm">
           Don't have an account?{" "}
           <Button asChild variant="link" size="sm" className="px-1" disabled={isAnyLoading}>
