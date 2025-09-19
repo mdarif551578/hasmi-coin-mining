@@ -35,6 +35,7 @@ const generateReferralCode = () => {
 };
 
 const createUserDocument = async (user: User) => {
+    if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
@@ -66,26 +67,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          await createUserDocument(result.user);
+        }
+      } catch (error) {
+        console.error("Google sign-in redirect error:", error);
+      } finally {
+        // This check is important to set loading to false only when auth state is also determined
+        if (auth.currentUser !== null || user === null) {
+            setLoading(false);
+        }
+      }
+    };
+    
+    handleRedirectResult();
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        createUserDocument(user);
+        await createUserDocument(user);
       }
       setLoading(false);
     });
 
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          const user = result.user;
-          createUserDocument(user);
-        }
-      })
-      .catch((error) => {
-        console.error("Google sign-in redirect error:", error);
-      }).finally(() => {
-         setLoading(false);
-      });
 
     return () => unsubscribe();
   }, []);
@@ -122,6 +129,8 @@ export const signIn = async (email:string, password: string): Promise<{ error?: 
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
+    // Set loading to true before redirect to show loading indicator on return
+    // This is handled by the overall loading state in the provider
     await signInWithRedirect(auth, provider);
     return {};
   } catch (error) {
