@@ -27,6 +27,7 @@ export default function MarketplacePage() {
                   <TableHead className="pl-4">Seller</TableHead>
                   <TableHead>Amount (HC)</TableHead>
                   <TableHead>Rate ($/HC)</TableHead>
+                  <TableHead>Total ($)</TableHead>
                   <TableHead className="text-right pr-4">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -36,6 +37,7 @@ export default function MarketplacePage() {
                     <TableCell className="pl-4 py-2">{listing.seller}</TableCell>
                     <TableCell className="py-2">{listing.amount.toLocaleString()}</TableCell>
                     <TableCell className="py-2">${listing.rate.toFixed(3)}</TableCell>
+                    <TableCell className="py-2 font-semibold">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
                     <TableCell className="text-right pr-4 py-2">
                       <Button size="sm" className="h-8 px-2 text-xs">Buy</Button>
                     </TableCell>
