@@ -68,7 +68,7 @@ export default function DepositPage() {
             <TabsContent value="bkash">
               <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm">
                 <p>Please complete your bKash payment to agent number:</p>
-                <p className="font-bold text-lg my-1">01928558184</p>
+                <p className="font-bold text-lg my-1">01XXXXXXXXX</p>
                 <p>Then, fill the form below.</p>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -90,7 +90,7 @@ export default function DepositPage() {
             <TabsContent value="nagad">
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm">
                     <p>Please complete your Nagad payment to agent number:</p>
-                    <p className="font-bold text-lg my-1">01928558184</p>
+                    <p className="font-bold text-lg my-1">01XXXXXXXXX</p>
                     <p>Then, fill the form below.</p>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
