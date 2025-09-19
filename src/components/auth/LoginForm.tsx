@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
 import { signInWithGoogle } from "@/lib/auth";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
@@ -57,41 +57,39 @@ export function LoginForm() {
   });
 
   async function checkAccountType(email: string): Promise<Step> {
-    // Method 1: Try a dummy password sign-in to detect account type
     try {
-      await signInWithEmailAndPassword(auth, email, "dummy-password-that-will-fail");
-      // This should never succeed
-      return "password";
-    } catch (error: any) {
-      console.log("Password check error:", error.code);
+      console.log(`Checking account for: ${email}`);
       
-      if (error.code === 'auth/wrong-password') {
-        // Account exists with password auth
+      // Try to sign in with a weak password to detect account type
+      await signInWithEmailAndPassword(auth, email, "weakpass123");
+      
+      // If this succeeds, it means the account exists with this exact password (unlikely)
+      return "password";
+      
+    } catch (error: any) {
+      console.log("Sign-in attempt error:", error.code, error.message);
+      
+      // These error codes definitively indicate an account exists
+      if (error.code === 'auth/wrong-password' || 
+          error.code === 'auth/too-many-requests') {
+        console.log("Password-based account detected");
         return "password";
-      } else if (error.code === 'auth/user-not-found') {
-        // Try Method 2: Attempt to create account to see if it conflicts
-        try {
-          await createUserWithEmailAndPassword(auth, email, "dummy-password-for-detection");
-          // If this succeeds, the email was truly available
-          // Delete the dummy account immediately
-          if (auth.currentUser) {
-            await auth.currentUser.delete();
-          }
-          return "not_found";
-        } catch (createError: any) {
-          console.log("Create account error:", createError.code);
-          
-          if (createError.code === 'auth/email-already-in-use') {
-            // Email exists but not with password - likely Google
-            return "google_auth";
-          }
-          return "not_found";
-        }
-      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-disabled') {
-        // These often indicate the account exists but uses a different provider
+      }
+      
+      // These codes indicate account exists but with different provider
+      if (error.code === 'auth/invalid-credential') {
+        console.log("Different provider account detected (likely Google)");
         return "google_auth";
       }
       
+      // User not found - account doesn't exist
+      if (error.code === 'auth/user-not-found') {
+        console.log("No account found");
+        return "not_found";
+      }
+      
+      // For any other errors, default to not found to avoid false positives
+      console.log("Unknown error, defaulting to not found");
       return "not_found";
     }
   }
@@ -117,7 +115,7 @@ export function LoginForm() {
         description: "Could not verify email. Please try again or use 'Sign in with Google'.",
         variant: "destructive"
       });
-      // Default to showing not found
+      // Default to showing both options
       setStep("not_found");
     } finally {
       setIsLoading(false);
@@ -319,5 +317,3 @@ export function LoginForm() {
     </Card>
   );
 }
-
-    
