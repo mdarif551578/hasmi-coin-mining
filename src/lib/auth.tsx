@@ -154,5 +154,4 @@ export const resetPassword = async (email: string): Promise<{ error?: any }> => 
         return { error };
     }
 }
-
     

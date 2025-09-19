@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
 import { signInWithGoogle } from "@/lib/auth";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, fetchSignInMethodsForEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
@@ -32,12 +32,12 @@ const formSchema = z.object({
 type Step = "email" | "password" | "google_auth" | "not_found";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.242,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-    </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
+    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.242,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+  </svg>
 );
 
 export function LoginForm() {
@@ -58,22 +58,30 @@ export function LoginForm() {
 
   async function checkAccountType(email: string): Promise<Step> {
     try {
-      // This is the most reliable way to check. Trying a bad password will either throw 'auth/wrong-password'
-      // (confirming a password account) or 'auth/user-not-found' (confirming no password account).
-      // Any other error means it's likely a social-only account.
-      await signInWithEmailAndPassword(auth, email, "intentionally-wrong-password-for-detection");
-      // This line should never be reached.
-      return "password";
-    } catch (error: any) {
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/too-many-requests') {
-        return "password"; // Definitely a password account.
-      } else if (error.code === 'auth/user-not-found') {
-        return "not_found"; // Definitely no account with this email.
-      } else {
-        // Any other error, like 'auth/invalid-credential' (which is now only triggered for social-only accounts
-        // since 'user-not-found' is caught first), implies a social provider.
+      console.log(`Checking account for: ${email}`);
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      console.log(`Sign-in methods for ${email}:`, signInMethods);
+
+      if (signInMethods.length === 0) {
+        console.log("No account found");
+        return "not_found";
+      }
+
+      if (signInMethods.includes("password")) {
+        console.log("Password-based account detected");
+        return "password";
+      }
+
+      if (signInMethods.includes("google.com")) {
+        console.log("Google-based account detected");
         return "google_auth";
       }
+
+      console.log("Other provider detected");
+      return "google_auth"; // Or create a new step for other providers
+    } catch (error: any) {
+      console.error("Error checking account type:", error);
+      return "not_found";
     }
   }
 
@@ -87,16 +95,14 @@ export function LoginForm() {
     }
 
     try {
-      console.log(`Checking account type for email: ${email}`);
       const accountType = await checkAccountType(email);
-      console.log(`Detected account type: ${accountType}`);
       setStep(accountType);
     } catch (error) {
       console.error("Error checking account type:", error);
       toast({
         title: "Error",
-        description: "Could not verify email. Please try again or use 'Sign in with Google'.",
-        variant: "destructive"
+        description: "Could not verify email. Please try again.",
+        variant: "destructive",
       });
       setStep("not_found");
     } finally {
@@ -109,13 +115,12 @@ export function LoginForm() {
 
     setIsLoading(true);
     const { email, password } = values;
-    
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Sign-in error:", error);
-      
       if (error.code === 'auth/wrong-password') {
         toast({
           title: "Incorrect password",
@@ -164,7 +169,7 @@ export function LoginForm() {
   const resetForm = () => {
     form.reset();
     setStep('email');
-  }
+  };
 
   return (
     <Card className="rounded-2xl shadow-lg">
@@ -182,10 +187,10 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="you@example.com" 
-                      {...field} 
-                      disabled={isAnyLoading || step !== 'email'} 
+                    <Input
+                      placeholder="you@example.com"
+                      {...field}
+                      disabled={isAnyLoading || step !== 'email'}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -248,7 +253,7 @@ export function LoginForm() {
                 {isLoading ? 'Signing In...' : 'Sign In'}
               </Button>
             )}
-            
+
             {step === 'google_auth' && (
               <div className="p-4 text-center bg-muted/50 rounded-lg">
                 <p className="text-sm font-semibold">This email is linked to a Google account.</p>
@@ -263,7 +268,6 @@ export function LoginForm() {
                 </Button>
               </div>
             )}
-            
           </form>
         </Form>
 
@@ -272,7 +276,7 @@ export function LoginForm() {
             Use another email
           </Button>
         )}
-        
+
         <div className="relative my-6">
           <Separator />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
