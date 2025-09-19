@@ -37,37 +37,36 @@ export default function TasksPage() {
 
   return (
     <>
-      <div className="p-4 md:p-6">
-        <Card className="rounded-2xl">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Tasks & Earn</CardTitle>
-            <Button size="sm" onClick={handleCreateTaskClick}>
-              <Plus className="mr-2" />
-              Create Task
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {tasks.map((task) => (
-              <Card
-                key={task.id}
-                className="flex items-center justify-between p-3 bg-card-foreground/5"
-              >
-                <div className="flex items-center gap-3">
-                  <CheckSquare className="size-5 text-primary shrink-0" />
-                  <div>
-                    <p className="text-sm">{task.description}</p>
-                    <p className="text-sm text-primary font-bold">
-                      +{task.reward} HC
-                    </p>
-                  </div>
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-4">
+          <h1 className="text-xl font-bold">Tasks & Earn</h1>
+          <Button size="sm" onClick={handleCreateTaskClick}>
+            <Plus className="mr-2" />
+            Create Task
+          </Button>
+        </div>
+        
+        <div className="space-y-3">
+          {tasks.map((task) => (
+            <Card
+              key={task.id}
+              className="flex items-center justify-between p-3 rounded-xl"
+            >
+              <div className="flex items-center gap-3">
+                <CheckSquare className="size-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm">{task.description}</p>
+                  <p className="text-sm text-primary font-bold">
+                    +{task.reward} HC
+                  </p>
                 </div>
-                <Button size="sm" className="h-8 px-3 text-xs ml-2">
-                  Go
-                </Button>
-              </Card>
-            ))}
-          </CardContent>
-        </Card>
+              </div>
+              <Button size="sm" className="h-8 px-3 text-xs ml-2">
+                Go
+              </Button>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>

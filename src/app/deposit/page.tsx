@@ -33,7 +33,10 @@ export default function DepositPage() {
     };
 
   return (
-    <div className="p-4 md:p-6 max-w-md mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+       <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold">Deposit</h1>
+       </div>
        <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>Token Price</CardTitle>
@@ -41,7 +44,7 @@ export default function DepositPage() {
         </CardHeader>
         <CardContent className="space-y-2">
             <p className="text-xl font-bold text-center">1 HC = $0.009 USD</p>
-            <div className="grid grid-cols-2 gap-2 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
                 {depositPackages.map((pkg) => (
                     <div key={pkg.usd} className="p-2 text-center rounded-lg bg-muted/50">
                         <p className="text-sm font-bold">${pkg.usd}</p>

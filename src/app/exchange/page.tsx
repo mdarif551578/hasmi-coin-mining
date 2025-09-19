@@ -40,8 +40,9 @@ export default function ExchangePage() {
     };
 
   return (
-    <div className="p-4 md:p-6 max-w-md mx-auto space-y-4">
-       <div className="flex justify-end">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+       <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-4">
+        <h1 className="text-xl font-bold">Exchange</h1>
          <Button asChild variant="outline" size="sm">
             <Link href="/marketplace">
                 <Store className="mr-2"/>

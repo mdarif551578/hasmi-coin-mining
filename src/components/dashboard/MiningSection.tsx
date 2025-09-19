@@ -49,7 +49,7 @@ export function MiningSection() {
     return (
         <Card className="rounded-2xl w-full">
             <CardHeader>
-                <CardTitle>Mining Center</CardTitle>
+                <CardTitle>Mining Plans</CardTitle>
                 <CardDescription>Claim rewards and upgrade your mining capabilities.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -60,7 +60,7 @@ export function MiningSection() {
                         <TabsTrigger value="nft" className="py-2 gap-1 text-xs"><Gem className="size-4" />NFT</TabsTrigger>
                     </TabsList>
                     <TabsContent value="free" className="mt-4">
-                        <Card className="bg-card-foreground/5">
+                        <Card className="bg-card-foreground/5 rounded-xl">
                             <CardHeader>
                                 <CardTitle className="text-base">Free Claim</CardTitle>
                                 <CardDescription>Claim your free Hasmi Coins every 24 hours.</CardDescription>
@@ -99,7 +99,7 @@ export function MiningSection() {
                     <TabsContent value="paid" className="mt-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {paidPlans.map(plan => (
-                                <Card key={plan.id} className="flex flex-col bg-card-foreground/5">
+                                <Card key={plan.id} className="flex flex-col bg-card-foreground/5 rounded-xl">
                                     <CardHeader>
                                         <CardTitle className="text-base">{plan.name}</CardTitle>
                                         <CardDescription>{plan.duration}</CardDescription>
@@ -118,7 +118,7 @@ export function MiningSection() {
                     <TabsContent value="nft" className="mt-4">
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {nftPlans.map(plan => (
-                                <Card key={plan.id} className="flex flex-col bg-card-foreground/5">
+                                <Card key={plan.id} className="flex flex-col bg-card-foreground/5 rounded-xl">
                                     <CardHeader>
                                         <CardTitle className="text-base">{plan.name}</CardTitle>
                                         <CardDescription>{plan.duration}</CardDescription>
