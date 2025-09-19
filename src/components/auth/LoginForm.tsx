@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,7 +40,6 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -63,30 +61,29 @@ export function LoginForm() {
     const email = form.getValues("email");
     const emailState = await form.trigger("email");
     if (!emailState) {
-        setIsLoading(false);
-        return;
+      setIsLoading(false);
+      return;
     }
 
     try {
-        const methods = await fetchSignInMethodsForEmail(auth, email);
-        if (methods.includes("password")) {
-            setStep("password");
-        } else if (methods.includes("google.com")) {
-            setStep("google_auth");
-        } else {
-            setStep("not_found");
-        }
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      if (methods.length === 0) {
+        setStep("not_found");
+      } else if (methods.includes("google.com")) {
+        setStep("google_auth");
+      } else if (methods.includes("password")) {
+        setStep("password");
+      }
     } catch (error) {
-        toast({
-            title: "Error",
-            description: "Could not verify email. Please try again.",
-            variant: "destructive"
-        })
+      toast({
+        title: "Error",
+        description: "Could not verify email. Please try again.",
+        variant: "destructive"
+      });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }
-
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (step !== 'password') return;
@@ -152,94 +149,94 @@ export function LoginForm() {
             />
 
             {step === "password" && (
-                <FormField
+              <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Please enter your password to continue.</FormLabel>
                     <FormControl>
-                        <div className="relative">
+                      <div className="relative">
                         <Input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
-                            {...field}
-                            disabled={isAnyLoading}
-                            autoFocus
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          {...field}
+                          disabled={isAnyLoading}
+                          autoFocus
                         />
                         <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute inset-y-0 right-0 h-full px-3"
-                            onClick={() => setShowPassword(!showPassword)}
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute inset-y-0 right-0 h-full px-3"
+                          onClick={() => setShowPassword(!showPassword)}
                         >
-                            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         </Button>
-                        </div>
+                      </div>
                     </FormControl>
                     <div className="text-right">
-                        <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isAnyLoading}>
-                            <Link href="/reset-password">Forgot password?</Link>
-                        </Button>
+                      <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isAnyLoading}>
+                        <Link href="/reset-password">Forgot password?</Link>
+                      </Button>
                     </div>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
+              />
             )}
 
             {step === 'email' && (
-                <Button type="button" onClick={handleContinue} className="w-full h-10" disabled={isAnyLoading}>
-                    {isLoading ? 'Checking...' : 'Continue'}
-                </Button>
+              <Button type="button" onClick={handleContinue} className="w-full h-10" disabled={isAnyLoading}>
+                {isLoading ? 'Checking...' : 'Continue'}
+              </Button>
             )}
 
             {step === 'password' && (
-                <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>
-                    {isLoading ? 'Signing In...' : 'Sign In'}
-                </Button>
+              <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>
+                {isLoading ? 'Signing In...' : 'Sign In'}
+              </Button>
             )}
             
             {step === 'google_auth' && (
-                <div className="p-4 text-center bg-muted/50 rounded-lg">
-                    <p className="text-sm font-semibold">This email is linked to a Google account.</p>
-                    <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below to proceed.</p>
-                </div>
+              <div className="p-4 text-center bg-muted/50 rounded-lg">
+                <p className="text-sm font-semibold">This email is linked to a Google account.</p>
+                <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below to proceed.</p>
+              </div>
             )}
             {step === 'not_found' && (
-                 <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
-                    <p className="text-sm font-semibold">No account found with this email.</p>
-                    <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
-                        <Link href="/signup">Would you like to sign up?</Link>
-                    </Button>
-                </div>
+              <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
+                <p className="text-sm font-semibold">No account found with this email.</p>
+                <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
+                  <Link href="/signup">Would you like to sign up?</Link>
+                </Button>
+              </div>
             )}
             
           </form>
         </Form>
 
         {(step !== 'email') && (
-            <Button variant="link" size="sm" className="px-0 mt-2" onClick={resetForm} disabled={isAnyLoading}>
-                Use another email
-            </Button>
+          <Button variant="link" size="sm" className="px-0 mt-2" onClick={resetForm} disabled={isAnyLoading}>
+            Use another email
+          </Button>
         )}
         
         <div className="relative my-6">
-            <Separator />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
-            </div>
+          <Separator />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
+          </div>
         </div>
         <div className="space-y-3">
-             <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
-                {isGoogleLoading ? 'Redirecting...' : (
-                    <>
-                        <GoogleIcon className="mr-2" />
-                        Sign in with Google
-                    </>
-                )}
-            </Button>
+          <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
+            {isGoogleLoading ? 'Redirecting...' : (
+              <>
+                <GoogleIcon className="mr-2" />
+                Sign in with Google
+              </>
+            )}
+          </Button>
         </div>
         <div className="mt-6 text-center text-sm">
           Don't have an account?{" "}
@@ -251,5 +248,3 @@ export function LoginForm() {
     </Card>
   );
 }
-
-    
