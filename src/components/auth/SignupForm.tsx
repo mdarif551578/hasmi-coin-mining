@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,6 +42,7 @@ export function SignupForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,7 +71,7 @@ export function SignupForm() {
   }
 
   async function handleGoogleSignIn() {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     const { error } = await signInWithGoogle();
     if (error) {
        toast({
@@ -77,11 +79,12 @@ export function SignupForm() {
         description: (error as Error).message,
         variant: "destructive",
       });
-    } else {
-       router.push('/dashboard');
+       setIsGoogleLoading(false);
     }
-    setIsLoading(false);
+     // No need to push to dashboard, the AuthProvider will handle it
   }
+
+  const isAnyLoading = isLoading || isGoogleLoading;
 
   return (
     <Card className="rounded-2xl shadow-lg">
@@ -99,7 +102,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} disabled={isLoading} />
+                    <Input placeholder="John Doe" {...field} disabled={isAnyLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -112,7 +115,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="you@example.com" {...field} disabled={isLoading} />
+                    <Input placeholder="you@example.com" {...field} disabled={isAnyLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -125,13 +128,13 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isAnyLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full h-10" disabled={isLoading}>{isLoading ? 'Creating Account...' : 'Create Account'}</Button>
+            <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>{isLoading ? 'Creating Account...' : 'Create Account'}</Button>
           </form>
         </Form>
          <div className="relative my-6">
@@ -141,14 +144,18 @@ export function SignupForm() {
             </div>
         </div>
         <div className="space-y-3">
-             <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isLoading}>
-                <GoogleIcon className="mr-2" />
-                Sign up with Google
+             <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
+                {isGoogleLoading ? 'Redirecting...' : (
+                    <>
+                        <GoogleIcon className="mr-2" />
+                        Sign up with Google
+                    </>
+                )}
             </Button>
         </div>
         <div className="mt-6 text-center text-sm">
           Already have an account?{" "}
-          <Button asChild variant="link" size="sm" className="px-1">
+          <Button asChild variant="link" size="sm" className="px-1" disabled={isAnyLoading}>
             <Link href="/login">Sign In</Link>
           </Button>
         </div>

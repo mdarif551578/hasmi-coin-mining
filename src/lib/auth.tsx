@@ -6,11 +6,12 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   updateProfile,
+  getRedirectResult,
   User,
 } from 'firebase/auth';
 import { auth } from './firebase';
@@ -31,6 +32,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(user);
       setLoading(false);
     });
+
+    // Handle the redirect result
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // This is the signed-in user
+          const user = result.user;
+          // You can also get the Google Access Token if you need it.
+          // const credential = GoogleAuthProvider.credentialFromResult(result);
+          // const token = credential?.accessToken;
+        }
+      })
+      .catch((error) => {
+        // Handle Errors here.
+        console.error("Google sign-in redirect error:", error);
+      }).finally(() => {
+         setLoading(false);
+      });
 
     return () => unsubscribe();
   }, []);
@@ -66,7 +85,7 @@ export const signIn = async (email:string, password: string): Promise<{ error?: 
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
-    await signInWithPopup(auth, provider);
+    await signInWithRedirect(auth, provider);
     return {};
   } catch (error) {
     return { error };

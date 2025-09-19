@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,6 +41,7 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,7 +68,7 @@ export function LoginForm() {
   }
 
   async function handleGoogleSignIn() {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     const { error } = await signInWithGoogle();
     if (error) {
        toast({
@@ -74,11 +76,12 @@ export function LoginForm() {
         description: (error as Error).message,
         variant: "destructive",
       });
-    } else {
-       router.push('/dashboard');
+       setIsGoogleLoading(false);
     }
-    setIsLoading(false);
+    // No need to push to dashboard, the AuthProvider will handle it
   }
+
+  const isAnyLoading = isLoading || isGoogleLoading;
 
   return (
     <Card className="rounded-2xl shadow-lg">
@@ -96,7 +99,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="you@example.com" {...field} disabled={isLoading} />
+                    <Input placeholder="you@example.com" {...field} disabled={isAnyLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -109,10 +112,10 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isAnyLoading} />
                   </FormControl>
                    <div className="text-right">
-                     <Button asChild variant="link" size="sm" className="px-0 h-auto">
+                     <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isAnyLoading}>
                         <Link href="/reset-password">Forgot password?</Link>
                      </Button>
                    </div>
@@ -120,7 +123,7 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full h-10" disabled={isLoading}>{isLoading ? 'Signing In...' : 'Sign In'}</Button>
+            <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>{isLoading ? 'Signing In...' : 'Sign In'}</Button>
           </form>
         </Form>
         <div className="relative my-6">
@@ -130,14 +133,18 @@ export function LoginForm() {
             </div>
         </div>
         <div className="space-y-3">
-             <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isLoading}>
-                <GoogleIcon className="mr-2" />
-                Sign in with Google
+             <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
+                {isGoogleLoading ? 'Redirecting...' : (
+                    <>
+                        <GoogleIcon className="mr-2" />
+                        Sign in with Google
+                    </>
+                )}
             </Button>
         </div>
         <div className="mt-6 text-center text-sm">
           Don't have an account?{" "}
-          <Button asChild variant="link" size="sm" className="px-1">
+          <Button asChild variant="link" size="sm" className="px-1" disabled={isAnyLoading}>
             <Link href="/signup">Sign up</Link>
           </Button>
         </div>
