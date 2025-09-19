@@ -15,12 +15,12 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-2">
             <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
-                <p className="text-xs text-muted-foreground">Wallet Balance</p>
+                <p className="text-xs text-muted-foreground">HC Balance</p>
                 <p className="text-lg font-bold">{user.walletBalance.toLocaleString()} <span className="text-sm font-normal">HC</span></p>
             </div>
              <div className="flex flex-col items-center justify-center p-3 bg-card-foreground/5 rounded-lg">
-                <p className="text-xs text-muted-foreground">Referrals</p>
-                <p className="text-lg font-bold">{user.totalReferrals}</p>
+                <p className="text-xs text-muted-foreground">USD Balance</p>
+                <p className="text-lg font-bold">${user.usdBalance.toFixed(2)}</p>
             </div>
         </CardContent>
       </Card>

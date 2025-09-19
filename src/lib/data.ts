@@ -4,6 +4,7 @@ export const user: User = {
     name: "Hasmi",
     referralCode: "HASMI-A1B2C3",
     walletBalance: 1234.56,
+    usdBalance: 50.25,
     totalReferrals: 12,
     miningStatus: "Active",
     isPro: false,

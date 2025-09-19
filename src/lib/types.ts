@@ -25,7 +25,8 @@ export type NftPlan = {
 export type User = {
     name: string;
     referralCode: string;
-    walletBalance: number;
+    walletBalance: number; // This will represent HC
+    usdBalance: number; // This will represent USD
     totalReferrals: number;
     miningStatus: 'Active' | 'Inactive';
     isPro: boolean;
