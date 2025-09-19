@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { marketListings, user } from "@/lib/data";
-import { Plus, Coins } from "lucide-react";
+import { Plus, Coins, Repeat } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 export default function MarketplacePage() {
   const [open, setOpen] = useState(false);
@@ -44,58 +45,66 @@ export default function MarketplacePage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2">
         <h1 className="text-xl font-bold">P2P Marketplace</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus />
-              Create Offer
+        <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+                <Link href="/exchange">
+                    <Repeat className="mr-2"/>
+                    Exchange
+                </Link>
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Create a Sell Offer</DialogTitle>
-              <DialogDescription>
-                Enter the amount of Hasmi Coin (HC) you want to sell and the rate. Your offer will be reviewed by an admin.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">
-                  Amount (HC)
-                </Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="col-span-3"
-                  placeholder="e.g. 500"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="rate" className="text-right">
-                  Rate ($/HC)
-                </Label>
-                <Input
-                  id="rate"
-                  type="number"
-                  step="0.001"
-                  value={rate}
-                  onChange={(e) => setRate(e.target.value)}
-                  className="col-span-3"
-                  placeholder="e.g. 0.01"
-                  required
-                />
-              </div>
-               <DialogFooter>
-                <Button type="submit">Submit for Approval</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm">
+                <Plus />
+                Create Offer
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                <DialogTitle>Create a Sell Offer</DialogTitle>
+                <DialogDescription>
+                    Enter the amount of Hasmi Coin (HC) you want to sell and the rate. Your offer will be reviewed by an admin.
+                </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="amount" className="text-right">
+                    Amount (HC)
+                    </Label>
+                    <Input
+                    id="amount"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="col-span-3"
+                    placeholder="e.g. 500"
+                    required
+                    />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="rate" className="text-right">
+                    Rate ($/HC)
+                    </Label>
+                    <Input
+                    id="rate"
+                    type="number"
+                    step="0.001"
+                    value={rate}
+                    onChange={(e) => setRate(e.target.value)}
+                    className="col-span-3"
+                    placeholder="e.g. 0.01"
+                    required
+                    />
+                </div>
+                <DialogFooter>
+                    <Button type="submit">Submit for Approval</Button>
+                </DialogFooter>
+                </form>
+            </DialogContent>
+            </Dialog>
+        </div>
       </div>
       
       {myPendingOffers.length > 0 && (

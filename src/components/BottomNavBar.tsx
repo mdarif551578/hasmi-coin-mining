@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Repeat, CheckSquare, Store, User, Cog } from "lucide-react";
+import { Repeat, CheckSquare, Store, User, Cog, Home as HomeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 const navItems = [
+  { href: "/dashboard", icon: HomeIcon, label: "Home" },
   { href: "/mining", icon: Cog, label: "Mine" },
   { href: "/tasks", icon: CheckSquare, label: "Tasks" },
-  { href: "/exchange", icon: Repeat, label: "Exchange" },
   { href: "/marketplace", icon: Store, label: "Market" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
@@ -30,6 +30,9 @@ export function BottomNavBar() {
     );
   }
 
+  // A bit of a hack to handle the / dashboard redirect and have the Home icon active
+  const isHomeActive = pathname === '/dashboard' || pathname === '/';
+
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-card border-t border-border/50">
       <div className={`grid h-full max-w-lg grid-cols-5 mx-auto font-medium`}>
@@ -40,7 +43,7 @@ export function BottomNavBar() {
             className={cn(
               "inline-flex flex-col items-center justify-center px-1 hover:bg-accent/50 group transition-colors h-full",
               "text-xs",
-              pathname === item.href
+               (item.href === '/dashboard' && isHomeActive) || (item.href !== '/dashboard' && pathname === item.href)
                 ? "text-primary"
                 : "text-muted-foreground"
             )}

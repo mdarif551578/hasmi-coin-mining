@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { user } from "@/lib/data";
-import { Repeat } from "lucide-react";
+import { Repeat, Store } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 const USD_TO_HC_RATE = 110; // 1 USD = 110 HC
 
@@ -40,6 +41,14 @@ export default function ExchangePage() {
 
   return (
     <div className="p-4 md:p-6 max-w-md mx-auto space-y-4">
+       <div className="flex justify-end">
+         <Button asChild variant="outline" size="sm">
+            <Link href="/marketplace">
+                <Store className="mr-2"/>
+                P2P Market
+            </Link>
+        </Button>
+       </div>
        <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>Your Balances</CardTitle>
