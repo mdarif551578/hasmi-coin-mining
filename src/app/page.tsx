@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -16,6 +17,7 @@ export default function Home() {
         router.push("/login");
       }
     }
+    // Only run this effect when loading changes
   }, [router, user, loading]);
 
   return (

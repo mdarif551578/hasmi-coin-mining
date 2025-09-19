@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType>({ user: null, loading: true }
 
 // Function to generate a random referral code
 const generateReferralCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ01234ranoS';
     let code = '';
     for (let i = 0; i < 8; i++) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -68,22 +68,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const processAuth = async () => {
-      // Set loading to true at the beginning of the auth process
       setLoading(true);
-
       try {
-        // First, handle any pending redirect results from Google Sign-In
         const result = await getRedirectResult(auth);
         if (result) {
-          // A user has successfully signed in via redirect
+          // User signed in via redirect.
           await createUserDocument(result.user);
-          // The onAuthStateChanged listener below will handle setting the user
+          // The onAuthStateChanged listener will handle setting the user.
         }
       } catch (error) {
         console.error("Error processing redirect result:", error);
+      } finally {
+         // The onAuthStateChanged listener is the single source of truth.
+         // It will set the user and setLoading(false) once the state is definitive.
       }
       
-      // Set up the onAuthStateChanged listener. This will also fire after a redirect.
       const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
           await createUserDocument(currentUser);
@@ -91,7 +90,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           setUser(null);
         }
-        // Once the listener has given us the definitive state, we can stop loading.
         setLoading(false);
       });
 
@@ -120,7 +118,7 @@ export const signUp = async (name: string, email:string, password: string): Prom
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
-    await createUserDocument(userCredential.user);
+    // createUserDocument is now called from onAuthStateChanged
     return {};
   } catch (error) {
     return { error };
@@ -139,13 +137,15 @@ export const signIn = async (email:string, password: string): Promise<{ error?: 
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
-    // We don't await this, as the redirect will navigate the user away
-    signInWithRedirect(auth, provider);
+    // This will start the redirect flow.
+    // The user will be sent to the /auth/callback page on success.
+    await signInWithRedirect(auth, provider);
     return {};
   } catch (error) {
     return { error };
   }
 };
+
 
 export const signOut = async (): Promise<{ error?: any }> => {
   try {

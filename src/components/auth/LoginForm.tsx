@@ -108,9 +108,9 @@ export function LoginForm() {
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
+    // This will start the redirect flow. The user will be redirected
+    // and the AuthProvider will handle the result.
     await signInWithGoogle();
-    // No need to handle error or success here, the AuthProvider will manage the state
-    // and redirect on its own after the redirect flow is complete.
   }
 
   const isAnyLoading = isLoading || isGoogleLoading;
