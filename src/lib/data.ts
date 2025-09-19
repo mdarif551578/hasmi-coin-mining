@@ -43,4 +43,6 @@ export const marketListings: MarketListing[] = [
     { id: 'm1', seller: 'UserA', amount: 100, rate: 0.1, status: 'open' },
     { id: 'm2', seller: 'UserB', amount: 250, rate: 0.11, status: 'open' },
     { id: 'm3', seller: 'UserC', amount: 50, rate: 0.09, status: 'sold' },
+    { id: 'm4', seller: 'Hasmi', amount: 1000, rate: 0.12, status: 'pending' },
+    { id: 'm5', seller: 'Hasmi', amount: 500, rate: 0.115, status: 'pending' },
 ];

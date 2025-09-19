@@ -42,5 +42,5 @@ export type MarketListing = {
   seller: string;
   amount: number;
   rate: number;
-  status: 'open' | 'sold';
+  status: 'open' | 'sold' | 'pending';
 }

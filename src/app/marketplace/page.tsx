@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { marketListings } from "@/lib/data";
+import { marketListings, user } from "@/lib/data";
 import { Plus } from "lucide-react";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function MarketplacePage() {
   const [open, setOpen] = useState(false);
@@ -38,6 +39,8 @@ export default function MarketplacePage() {
     setRate("");
     setOpen(false);
   };
+
+  const myPendingOffers = marketListings.filter(l => l.seller === user.name && l.status === 'pending');
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -94,6 +97,40 @@ export default function MarketplacePage() {
           </DialogContent>
         </Dialog>
       </div>
+      
+      {myPendingOffers.length > 0 && (
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>My Pending Offers</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-4">Amount (HC)</TableHead>
+                    <TableHead>Rate ($/HC)</TableHead>
+                    <TableHead>Total ($)</TableHead>
+                    <TableHead className="text-right pr-4">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {myPendingOffers.map(listing => (
+                    <TableRow key={listing.id}>
+                      <TableCell className="pl-4 py-2">{listing.amount.toLocaleString()}</TableCell>
+                      <TableCell className="py-2">${listing.rate.toFixed(3)}</TableCell>
+                      <TableCell className="py-2 font-semibold">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
+                      <TableCell className="text-right pr-4 py-2">
+                        <Badge variant="secondary" className="capitalize text-xs">{listing.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="rounded-2xl">
         <CardHeader>
