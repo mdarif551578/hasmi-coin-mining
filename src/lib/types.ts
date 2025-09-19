@@ -28,6 +28,7 @@ export type User = {
     walletBalance: number;
     totalReferrals: number;
     miningStatus: 'Active' | 'Inactive';
+    isPro: boolean;
 }
 
 export type Task = {

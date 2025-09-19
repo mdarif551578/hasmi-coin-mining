@@ -1,37 +1,90 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CheckSquare, Plus } from "lucide-react";
-import { tasks } from "@/lib/data";
+import { tasks, user } from "@/lib/data";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function TasksPage() {
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const router = useRouter();
+
+  const handleCreateTaskClick = () => {
+    if (user.isPro) {
+      window.open("https://www.facebook.com/profile.php?id=61581206455781", "_blank");
+    } else {
+      setShowUpgradeDialog(true);
+    }
+  };
+
+  const handleUpgrade = () => {
+    setShowUpgradeDialog(false);
+    router.push("/mining");
+  };
+
   return (
-    <div className="p-4 md:p-6">
-      <Card className="rounded-2xl">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Tasks & Earn</CardTitle>
-          <Link href="https://www.facebook.com/profile.php?id=61581206455781" target="_blank" passHref>
-            <Button size="sm">
+    <>
+      <div className="p-4 md:p-6">
+        <Card className="rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Tasks & Earn</CardTitle>
+            <Button size="sm" onClick={handleCreateTaskClick}>
               <Plus className="mr-2" />
               Create Task
             </Button>
-          </Link>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {tasks.map(task => (
-            <Card key={task.id} className="flex items-center justify-between p-3 bg-card-foreground/5">
-              <div className="flex items-center gap-3">
-                <CheckSquare className="size-5 text-primary shrink-0" />
-                <div>
-                  <p className="text-sm">{task.description}</p>
-                  <p className="text-sm text-primary font-bold">+{task.reward} HC</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {tasks.map((task) => (
+              <Card
+                key={task.id}
+                className="flex items-center justify-between p-3 bg-card-foreground/5"
+              >
+                <div className="flex items-center gap-3">
+                  <CheckSquare className="size-5 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm">{task.description}</p>
+                    <p className="text-sm text-primary font-bold">
+                      +{task.reward} HC
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <Button size="sm" className="h-8 px-3 text-xs ml-2">Go</Button>
-            </Card>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
+                <Button size="sm" className="h-8 px-3 text-xs ml-2">
+                  Go
+                </Button>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Upgrade to Pro</AlertDialogTitle>
+            <AlertDialogDescription>
+              To create your own tasks, you need to upgrade to a Pro or Paid
+              plan. Unlock this feature and more by upgrading your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUpgrade}>Upgrade</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

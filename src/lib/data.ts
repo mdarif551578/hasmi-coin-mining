@@ -6,6 +6,7 @@ export const user: User = {
     walletBalance: 1234.56,
     totalReferrals: 12,
     miningStatus: "Active",
+    isPro: false,
 };
 
 export const transactions: Transaction[] = [
