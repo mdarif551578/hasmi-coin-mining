@@ -66,18 +66,25 @@ export function LoginForm() {
     }
 
     try {
+      console.log(`Checking methods for email: ${email}`);
       const methods = await fetchSignInMethodsForEmail(auth, email);
+      console.log(`Returned methods: ${methods}`);
+
       if (methods.length === 0) {
         setStep("not_found");
       } else if (methods.includes("google.com")) {
         setStep("google_auth");
       } else if (methods.includes("password")) {
         setStep("password");
+      } else {
+        console.log(`Unexpected methods: ${methods}`);
+        setStep("not_found");
       }
     } catch (error) {
+      console.error("Error fetching sign-in methods:", error);
       toast({
         title: "Error",
-        description: "Could not verify email. Please try again.",
+        description: "Could not verify email. Please check your Firebase configuration or try again later.",
         variant: "destructive"
       });
     } finally {
