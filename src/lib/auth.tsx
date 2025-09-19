@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (result) {
           // A user has successfully signed in via redirect
           await createUserDocument(result.user);
-          setUser(result.user);
+          // The onAuthStateChanged listener below will handle setting the user
         }
       } catch (error) {
         console.error("Error processing redirect result:", error);
@@ -120,7 +120,7 @@ export const signUp = async (name: string, email:string, password: string): Prom
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
-    // The user document is now created by the onAuthStateChanged listener
+    await createUserDocument(userCredential.user);
     return {};
   } catch (error) {
     return { error };
@@ -139,7 +139,8 @@ export const signIn = async (email:string, password: string): Promise<{ error?: 
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
-    await signInWithRedirect(auth, provider);
+    // We don't await this, as the redirect will navigate the user away
+    signInWithRedirect(auth, provider);
     return {};
   } catch (error) {
     return { error };

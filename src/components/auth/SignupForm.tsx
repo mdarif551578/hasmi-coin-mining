@@ -74,16 +74,8 @@ export function SignupForm() {
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
-    const { error } = await signInWithGoogle();
-    if (error) {
-       toast({
-        title: "Login Failed",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-       setIsGoogleLoading(false);
-    }
-     // No need to push to dashboard, the AuthProvider will handle it
+    await signInWithGoogle();
+     // No need to handle error or success here, the AuthProvider will manage the state
   }
 
   const isAnyLoading = isLoading || isGoogleLoading;
@@ -158,7 +150,7 @@ export function SignupForm() {
          <div className="relative my-6">
             <Separator />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <span className="bg-background px-2 text-xs text-muted-foreground">OR</span>
+                <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
             </div>
         </div>
         <div className="space-y-3">

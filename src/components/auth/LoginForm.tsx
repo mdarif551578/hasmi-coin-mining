@@ -108,16 +108,9 @@ export function LoginForm() {
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
-    const { error } = await signInWithGoogle();
-    if (error) {
-       toast({
-        title: "Login Failed",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-       setIsGoogleLoading(false);
-    }
-    // No need to push to dashboard, the AuthProvider will handle it
+    await signInWithGoogle();
+    // No need to handle error or success here, the AuthProvider will manage the state
+    // and redirect on its own after the redirect flow is complete.
   }
 
   const isAnyLoading = isLoading || isGoogleLoading;
