@@ -174,7 +174,7 @@ export function LoginForm() {
                             className="absolute inset-y-0 right-0 h-full px-3"
                             onClick={() => setShowPassword(!showPassword)}
                         >
-                            {showPassword ? <EyeOff /> : <Eye />}
+                            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         </Button>
                         </div>
                     </FormControl>
@@ -251,3 +251,5 @@ export function LoginForm() {
     </Card>
   );
 }
+
+    
