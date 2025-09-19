@@ -18,7 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
-import { signIn, signInWithGoogle, auth } from "@/lib/auth";
+import { signIn, signInWithGoogle } from "@/lib/auth";
+import { auth } from "@/lib/firebase";
 import { fetchSignInMethodsForEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -254,3 +255,5 @@ export function LoginForm() {
     </Card>
   );
 }
+
+    
