@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Cog, Store, User, Wallet } from "lucide-react";
+import { LayoutDashboard, Cog, CheckSquare, Wallet, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
   { href: "/mining", icon: Cog, label: "Mine" },
-  { href: "/marketplace", icon: Store, label: "Market" },
+  { href: "/tasks", icon: CheckSquare, label: "Tasks" },
   { href: "/wallet", icon: Wallet, label: "Wallet" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
