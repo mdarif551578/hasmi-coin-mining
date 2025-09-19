@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
 import { signIn, signInWithGoogle } from "@/lib/auth";
 import { auth } from "@/lib/firebase";
-import { fetchSignInMethodsForEmail } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
@@ -29,7 +29,7 @@ const formSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
-type Step = "email" | "password" | "google_auth" | "not_found";
+type Step = "email" | "password" | "both_options";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -47,6 +47,7 @@ export function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<Step>("email");
+  const [userEmail, setUserEmail] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,54 +66,76 @@ export function LoginForm() {
       return;
     }
 
-    try {
-      console.log(`Checking methods for email: ${email}`);
-      const methods = await fetchSignInMethodsForEmail(auth, email);
-      console.log(`Returned methods: ${methods}`);
+    setUserEmail(email);
+    
+    // Instead of trying to detect the auth method, show both options
+    // This is more reliable and user-friendly
+    setStep("both_options");
+    setIsLoading(false);
+  }
 
-      if (methods.length === 0) {
-        setStep("not_found");
-      } else if (methods.includes("google.com")) {
-        setStep("google_auth");
-      } else if (methods.includes("password")) {
-        setStep("password");
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (step !== 'password' && step !== 'both_options') return;
+
+    setIsLoading(true);
+    const { email, password } = values;
+    
+    try {
+      // Try signing in with email/password directly
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error("Email/password sign-in error:", error);
+      
+      // Handle specific error cases
+      if (error.code === 'auth/user-not-found') {
+        toast({
+          title: "Account not found",
+          description: "No account exists with this email and password. Try signing in with Google or sign up for a new account.",
+          variant: "destructive",
+        });
+      } else if (error.code === 'auth/wrong-password') {
+        toast({
+          title: "Incorrect password",
+          description: "The password you entered is incorrect. Please try again.",
+          variant: "destructive",
+        });
+      } else if (error.code === 'auth/invalid-credential') {
+        toast({
+          title: "Invalid credentials",
+          description: "This email might be linked to a Google account. Try signing in with Google instead.",
+          variant: "destructive",
+        });
+      } else if (error.code === 'auth/too-many-requests') {
+        toast({
+          title: "Too many attempts",
+          description: "Too many failed login attempts. Please try again later.",
+          variant: "destructive",
+        });
       } else {
-        console.log(`Unexpected methods: ${methods}`);
-        setStep("not_found");
+        toast({
+          title: "Login Failed",
+          description: error.message || "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
       }
-    } catch (error) {
-      console.error("Error fetching sign-in methods:", error);
-      toast({
-        title: "Error",
-        description: "Could not verify email. Please check your Firebase configuration or try again later.",
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (step !== 'password') return;
-
-    setIsLoading(true);
-    const { email, password } = values;
-    const { error } = await signIn(email, password);
-    if (error) {
-      toast({
-        title: "Login Failed",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-    } else {
-      router.push('/dashboard');
-    }
-    setIsLoading(false);
-  }
-
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
-    await signInWithGoogle();
+    try {
+      const result = await signInWithGoogle();
+      if (result && !result.error) {
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   }
 
   const isAnyLoading = isLoading || isGoogleLoading;
@@ -120,6 +143,7 @@ export function LoginForm() {
   const resetForm = () => {
     form.reset();
     setStep('email');
+    setUserEmail("");
   }
 
   return (
@@ -155,13 +179,13 @@ export function LoginForm() {
               )}
             />
 
-            {step === "password" && (
+            {(step === "password" || step === "both_options") && (
               <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Please enter your password to continue.</FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -169,7 +193,7 @@ export function LoginForm() {
                           placeholder="••••••••"
                           {...field}
                           disabled={isAnyLoading}
-                          autoFocus
+                          autoFocus={step === "password"}
                         />
                         <Button
                           type="button"
@@ -199,25 +223,10 @@ export function LoginForm() {
               </Button>
             )}
 
-            {step === 'password' && (
+            {(step === 'password' || step === 'both_options') && (
               <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>
-                {isLoading ? 'Signing In...' : 'Sign In'}
+                {isLoading ? 'Signing In...' : 'Sign In with Password'}
               </Button>
-            )}
-            
-            {step === 'google_auth' && (
-              <div className="p-4 text-center bg-muted/50 rounded-lg">
-                <p className="text-sm font-semibold">This email is linked to a Google account.</p>
-                <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below to proceed.</p>
-              </div>
-            )}
-            {step === 'not_found' && (
-              <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
-                <p className="text-sm font-semibold">No account found with this email.</p>
-                <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
-                  <Link href="/signup">Would you like to sign up?</Link>
-                </Button>
-              </div>
             )}
             
           </form>
@@ -229,12 +238,24 @@ export function LoginForm() {
           </Button>
         )}
         
-        <div className="relative my-6">
-          <Separator />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
+        {(step === 'both_options' || step === 'password') && (
+          <div className="relative my-6">
+            <Separator />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
+            </div>
           </div>
-        </div>
+        )}
+
+        {step === 'email' && (
+          <div className="relative my-6">
+            <Separator />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
+            </div>
+          </div>
+        )}
+        
         <div className="space-y-3">
           <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
             {isGoogleLoading ? 'Redirecting...' : (
@@ -245,6 +266,18 @@ export function LoginForm() {
             )}
           </Button>
         </div>
+
+        {step === 'both_options' && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Signing in as:</strong> {userEmail}
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Choose your preferred sign-in method above. If this email is linked to Google, use "Sign in with Google".
+            </p>
+          </div>
+        )}
+
         <div className="mt-6 text-center text-sm">
           Don't have an account?{" "}
           <Button asChild variant="link" size="sm" className="px-1" disabled={isAnyLoading}>
@@ -255,3 +288,5 @@ export function LoginForm() {
     </Card>
   );
 }
+
+    
