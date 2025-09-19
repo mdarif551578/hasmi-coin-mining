@@ -4,9 +4,8 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { marketListings, user } from "@/lib/data";
-import { Plus } from "lucide-react";
+import { Plus, Coins } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,15 +40,16 @@ export default function MarketplacePage() {
   };
 
   const myPendingOffers = marketListings.filter(l => l.seller === user.name && l.status === 'pending');
+  const openSellOffers = marketListings.filter(l => l.status === 'open');
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="p-4 md:p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">P2P Marketplace</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm">
-              <Plus className="mr-2" />
+              <Plus />
               Create Offer
             </Button>
           </DialogTrigger>
@@ -57,7 +57,7 @@ export default function MarketplacePage() {
             <DialogHeader>
               <DialogTitle>Create a Sell Offer</DialogTitle>
               <DialogDescription>
-                Enter the amount of Hasmi Coin (HC) you want to sell and the rate you want to sell it at. Your offer will be reviewed by an admin before it is listed.
+                Enter the amount of Hasmi Coin (HC) you want to sell and the rate. Your offer will be reviewed by an admin.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -99,72 +99,53 @@ export default function MarketplacePage() {
       </div>
       
       {myPendingOffers.length > 0 && (
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <CardTitle>My Pending Offers</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-4">Amount (HC)</TableHead>
-                    <TableHead>Rate ($/HC)</TableHead>
-                    <TableHead>Total ($)</TableHead>
-                    <TableHead className="text-right pr-4">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {myPendingOffers.map(listing => (
-                    <TableRow key={listing.id}>
-                      <TableCell className="pl-4 py-3">{listing.amount.toLocaleString()}</TableCell>
-                      <TableCell className="py-3">${listing.rate.toFixed(3)}</TableCell>
-                      <TableCell className="py-3 font-semibold">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
-                      <TableCell className="text-right pr-4 py-3">
-                        <Badge variant="secondary" className="capitalize text-xs">{listing.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+        <div>
+          <h2 className="text-lg font-semibold mb-2">My Pending Offers</h2>
+          <div className="space-y-3">
+            {myPendingOffers.map(listing => (
+              <Card key={listing.id} className="rounded-xl bg-card-foreground/5">
+                <CardContent className="p-4 flex justify-between items-center">
+                  <div>
+                     <p className="font-bold text-lg">{listing.amount.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">HC</span></p>
+                    <p className="text-xs text-muted-foreground">
+                      Rate: ${listing.rate.toFixed(3)} | Total: ${(listing.amount * listing.rate).toFixed(2)}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="capitalize text-xs">{listing.status}</Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       )}
 
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle>Open Sell Offers</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="pl-4">Seller</TableHead>
-                  <TableHead>Amount (HC)</TableHead>
-                  <TableHead>Rate ($/HC)</TableHead>
-                  <TableHead>Total ($)</TableHead>
-                  <TableHead className="text-right pr-4">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {marketListings.filter(l => l.status === 'open').map(listing => (
-                  <TableRow key={listing.id}>
-                    <TableCell className="pl-4 py-3 text-xs">{listing.seller}</TableCell>
-                    <TableCell className="py-3 text-xs">{listing.amount.toLocaleString()}</TableCell>
-                    <TableCell className="py-3 text-xs">${listing.rate.toFixed(3)}</TableCell>
-                    <TableCell className="py-3 font-semibold text-xs">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
-                    <TableCell className="text-right pr-4 py-3">
-                      <Button size="sm" className="h-8 px-2 text-xs">Buy</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Open Sell Offers</h2>
+        <div className="space-y-3">
+          {openSellOffers.map(listing => (
+            <Card key={listing.id} className="rounded-xl overflow-hidden">
+                <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Amount</p>
+                            <p className="font-bold text-xl">{listing.amount.toLocaleString()} <span className="text-base font-normal">HC</span></p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Total Price</p>
+                            <p className="font-bold text-xl text-primary">${(listing.amount * listing.rate).toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                        <span>Rate: ${listing.rate.toFixed(3)}/HC</span> &middot; <span>Seller: {listing.seller}</span>
+                    </div>
+                </CardContent>
+                <div className="bg-card-foreground/5 p-3">
+                    <Button className="w-full h-10">Buy Now</Button>
+                </div>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
