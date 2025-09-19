@@ -108,19 +108,19 @@ export default function MarketplacePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="pl-4">Amount (HC)</TableHead>
+                    <TableHead className="pl-6">Amount (HC)</TableHead>
                     <TableHead>Rate ($/HC)</TableHead>
                     <TableHead>Total ($)</TableHead>
-                    <TableHead className="text-right pr-4">Status</TableHead>
+                    <TableHead className="text-right pr-6">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {myPendingOffers.map(listing => (
                     <TableRow key={listing.id}>
-                      <TableCell className="pl-4 py-2">{listing.amount.toLocaleString()}</TableCell>
-                      <TableCell className="py-2">${listing.rate.toFixed(3)}</TableCell>
-                      <TableCell className="py-2 font-semibold">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
-                      <TableCell className="text-right pr-4 py-2">
+                      <TableCell className="pl-6 py-3">{listing.amount.toLocaleString()}</TableCell>
+                      <TableCell className="py-3">${listing.rate.toFixed(3)}</TableCell>
+                      <TableCell className="py-3 font-semibold">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
+                      <TableCell className="text-right pr-6 py-3">
                         <Badge variant="secondary" className="capitalize text-xs">{listing.status}</Badge>
                       </TableCell>
                     </TableRow>
@@ -141,21 +141,21 @@ export default function MarketplacePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-4">Seller</TableHead>
+                  <TableHead className="pl-6">Seller</TableHead>
                   <TableHead>Amount (HC)</TableHead>
                   <TableHead>Rate ($/HC)</TableHead>
                   <TableHead>Total ($)</TableHead>
-                  <TableHead className="text-right pr-4">Action</TableHead>
+                  <TableHead className="text-right pr-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {marketListings.filter(l => l.status === 'open').map(listing => (
                   <TableRow key={listing.id}>
-                    <TableCell className="pl-4 py-2">{listing.seller}</TableCell>
-                    <TableCell className="py-2">{listing.amount.toLocaleString()}</TableCell>
-                    <TableCell className="py-2">${listing.rate.toFixed(3)}</TableCell>
-                    <TableCell className="py-2 font-semibold">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
-                    <TableCell className="text-right pr-4 py-2">
+                    <TableCell className="pl-6 py-3">{listing.seller}</TableCell>
+                    <TableCell className="py-3">{listing.amount.toLocaleString()}</TableCell>
+                    <TableCell className="py-3">${listing.rate.toFixed(3)}</TableCell>
+                    <TableCell className="py-3 font-semibold">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
+                    <TableCell className="text-right pr-6 py-3">
                       <Button size="sm" className="h-8 px-2 text-xs">Buy</Button>
                     </TableCell>
                   </TableRow>
