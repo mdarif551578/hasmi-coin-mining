@@ -18,15 +18,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Separator } from "../ui/separator";
-import { signIn, signInWithGoogle } from "@/lib/auth";
+import { signIn, signInWithGoogle, auth } from "@/lib/auth";
+import { fetchSignInMethodsForEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
+
+type Step = "email" | "password" | "google_auth" | "not_found";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -44,6 +47,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<Step>("email");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,7 +57,39 @@ export function LoginForm() {
     },
   });
 
+  async function handleContinue() {
+    setIsLoading(true);
+    const email = form.getValues("email");
+    const emailState = await form.trigger("email");
+    if (!emailState) {
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+        const methods = await fetchSignInMethodsForEmail(auth, email);
+        if (methods.includes("password")) {
+            setStep("password");
+        } else if (methods.includes("google.com")) {
+            setStep("google_auth");
+        } else {
+            setStep("not_found");
+        }
+    } catch (error) {
+        toast({
+            title: "Error",
+            description: "Could not verify email. Please try again.",
+            variant: "destructive"
+        })
+    } finally {
+        setIsLoading(false);
+    }
+  }
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (step !== 'password') return;
+
     setIsLoading(true);
     const { email, password } = values;
     const { error } = await signIn(email, password);
@@ -101,53 +137,101 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="you@example.com" {...field} disabled={isAnyLoading} />
+                    <Input 
+                      placeholder="you@example.com" 
+                      {...field} 
+                      disabled={isAnyLoading || step !== 'email'} 
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleContinue();
+                        }
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        {...field}
-                        disabled={isAnyLoading}
-                      />
-                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute inset-y-0 right-0 h-full px-3"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff /> : <Eye />}
-                      </Button>
+
+            {step === "password" && (
+                <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                        <div className="relative">
+                        <Input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            {...field}
+                            disabled={isAnyLoading}
+                            autoFocus
+                        />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute inset-y-0 right-0 h-full px-3"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? <EyeOff /> : <Eye />}
+                        </Button>
+                        </div>
+                    </FormControl>
+                    <div className="text-right">
+                        <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isAnyLoading}>
+                            <Link href="/reset-password">Forgot password?</Link>
+                        </Button>
                     </div>
-                  </FormControl>
-                   <div className="text-right">
-                     <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isAnyLoading}>
-                        <Link href="/reset-password">Forgot password?</Link>
-                     </Button>
-                   </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>{isLoading ? 'Signing In...' : 'Sign In'}</Button>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            )}
+
+            {step === 'email' && (
+                <Button type="button" onClick={handleContinue} className="w-full h-10" disabled={isAnyLoading}>
+                    {isLoading ? 'Checking...' : 'Continue'}
+                </Button>
+            )}
+
+            {step === 'password' && (
+                <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>
+                    {isLoading ? 'Signing In...' : 'Sign In'}
+                </Button>
+            )}
+            
+            {step === 'google_auth' && (
+                <div className="p-4 text-center bg-muted/50 rounded-lg">
+                    <p className="text-sm">This email is registered with Google.</p>
+                    <p className="text-sm font-semibold">Please sign in using the Google button below.</p>
+                </div>
+            )}
+            {step === 'not_found' && (
+                 <div className="p-4 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
+                    <p className="text-sm">No account found with this email.</p>
+                    <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
+                        <Link href="/signup">Would you like to sign up?</Link>
+                    </Button>
+                </div>
+            )}
+            
           </form>
         </Form>
+
+        {step !== 'password' && (
+            <Button variant="link" size="sm" className="px-0 mt-2" onClick={() => setStep('email')}>
+                Use another email
+            </Button>
+        )}
+        
         <div className="relative my-6">
             <Separator />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <span className="bg-background px-2 text-xs text-muted-foreground">OR</span>
+                <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
             </div>
         </div>
         <div className="space-y-3">
