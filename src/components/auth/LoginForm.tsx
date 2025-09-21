@@ -79,10 +79,13 @@ export function LoginForm() {
       }
 
       console.log("Other provider detected");
-      return "google_auth";
+      return "google_auth"; // Fallback for other social providers
     } catch (error: any) {
       console.error("Error checking account type:", error);
        if (error.code === 'auth/operation-not-allowed') {
+         // This can happen if Email Enumeration Protection is enabled.
+         // In this case, we can't detect the user type, so we'll just ask for a password.
+         // A more user-friendly message will appear if they use the wrong method.
          toast({
             title: "Advanced Login Active",
             description: "Please enter your password. If you use Google, use the Google Sign-In button.",
