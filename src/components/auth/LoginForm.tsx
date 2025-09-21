@@ -21,6 +21,7 @@ import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { Separator } from "../ui/separator";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -104,9 +105,6 @@ export function LoginForm() {
                 <FormItem>
                    <div className="flex justify-between items-end">
                       <FormLabel>Password</FormLabel>
-                      <Button asChild variant="link" size="sm" className="px-0 h-auto -mb-1" disabled={isLoading}>
-                          <Link href="/reset-password">Forgot password?</Link>
-                      </Button>
                   </div>
                   <FormControl>
                     <div className="relative">
@@ -139,8 +137,18 @@ export function LoginForm() {
             </Button>
           </form>
         </Form>
+        
+        <div className="flex justify-between items-center text-sm mt-4">
+            <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isLoading}>
+                <Link href="/reset-password">Forgot password?</Link>
+            </Button>
+             <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isLoading}>
+                <Link href="/resend-verification">Resend verification</Link>
+            </Button>
+        </div>
 
-        <div className="mt-6 text-center text-sm">
+
+        <div className="mt-4 text-center text-sm">
           Don't have an account?{" "}
           <Button asChild variant="link" size="sm" className="px-1" disabled={isLoading}>
             <Link href="/signup">Sign up</Link>
