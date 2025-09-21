@@ -147,7 +147,6 @@ export function LoginForm() {
             </Button>
         </div>
 
-
         <div className="mt-4 text-center text-sm">
           Don't have an account?{" "}
           <Button asChild variant="link" size="sm" className="px-1" disabled={isLoading}>

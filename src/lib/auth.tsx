@@ -10,6 +10,9 @@ import {
   updateProfile,
   User,
   sendEmailVerification,
+  GoogleAuthProvider,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -69,6 +72,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     });
 
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          createUserDocument(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("Error processing redirect result:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
     return () => unsubscribe();
   }, []);
 
@@ -111,3 +127,8 @@ export const resetPassword = async (email: string): Promise<{ error?: any }> => 
         return { error };
     }
 }
+
+export const signInWithGoogle = () => {
+  const provider = new GoogleAuthProvider();
+  signInWithRedirect(auth, provider);
+};
