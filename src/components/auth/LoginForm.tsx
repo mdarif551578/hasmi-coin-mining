@@ -48,6 +48,7 @@ export function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<Step>("email");
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,86 +61,51 @@ export function LoginForm() {
   async function checkAccountType(email: string): Promise<Step> {
     try {
       const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (signInMethods.length === 0) {
-        return "not_found";
-      }
-      if (signInMethods.includes('password')) {
+      if (signInMethods.length === 0) return "not_found";
+      if (signInMethods.includes('password')) return "password";
+      if (signInMethods.includes('google.com')) return "google_auth";
+      return "google_auth"; // Fallback for other providers
+    } catch (err: any) {
+      if (err.code === 'auth/invalid-email') {
+        // This can happen if email enumeration protection is on.
+        // We'll proceed assuming it might be a password account, 
+        // and let the final sign-in attempt handle the error.
         return "password";
       }
-      if (signInMethods.includes('google.com')) {
-        return "google_auth";
-      }
-      return "google_auth"; // Fallback for other social providers
-    } catch (error: any) {
-      if (error.code === 'auth/invalid-email') {
-        // This error is thrown by fetchSignInMethodsForEmail for non-existent emails
-        // when email enumeration protection is enabled.
-        return "not_found";
-      }
-      console.error("Error checking account type:", error);
-      toast({
-        title: "Error",
-        description: "Could not verify email. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Error checking account type:", err);
+      setError("Could not verify your email. Please try again.");
       return "not_found";
     }
   }
 
   async function handleContinue() {
     setIsLoading(true);
+    setError(null);
     const email = form.getValues("email");
     const emailState = await form.trigger("email");
     if (!emailState) {
       setIsLoading(false);
       return;
     }
-
-    try {
-      const accountType = await checkAccountType(email);
-      setStep(accountType);
-    } catch (error) {
-      console.error("Error during handleContinue:", error);
-      toast({
-        title: "Error",
-        description: "Could not verify email. Please try again.",
-        variant: "destructive",
-      });
-      setStep("not_found");
-    } finally {
-      setIsLoading(false);
-    }
+    const accountType = await checkAccountType(email);
+    setStep(accountType);
+    setIsLoading(false);
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (step !== 'password') return;
-
+    if (step !== 'password' || !values.password) return;
     setIsLoading(true);
-    const { email, password } = values;
-
+    setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/auth/callback'); // Redirect to callback to unify flow
-    } catch (error: any) {
-      console.error("Sign-in error:", error);
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        toast({
-          title: "Incorrect password",
-          description: "The password you entered is incorrect. Please try again.",
-          variant: "destructive",
-        });
-      } else if (error.code === 'auth/too-many-requests') {
-        toast({
-          title: "Too many attempts",
-          description: "Too many failed login attempts. Please try again later.",
-          variant: "destructive",
-        });
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      router.push('/auth/callback');
+    } catch (err: any) {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        setError("Invalid credentials. Please check your email and password.");
+      } else if (err.code === 'auth/too-many-requests') {
+        setError("Too many failed login attempts. Please try again later.");
       } else {
-        toast({
-          title: "Login Failed",
-          description: "This email may be linked to Google. Please try the 'Sign in with Google' button.",
-          variant: "destructive",
-        });
+        setError("An unexpected error occurred during sign-in.");
       }
     } finally {
       setIsLoading(false);
@@ -148,26 +114,23 @@ export function LoginForm() {
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
+    setError(null);
     try {
-      // signInWithGoogle from lib/auth will initiate the redirect.
-      // The result will be handled by the /auth/callback page.
       await signInWithGoogle();
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-      toast({
-        title: "Google Sign-In Failed",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      // The redirect will be handled by the /auth/callback page
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      setError("An unexpected error occurred with Google Sign-In.");
       setIsGoogleLoading(false);
     }
   }
-
+  
   const isAnyLoading = isLoading || isGoogleLoading;
 
   const resetForm = () => {
-    form.reset();
+    form.reset({ email: "", password: "" });
     setStep('email');
+    setError(null);
   };
 
   return (
@@ -179,7 +142,7 @@ export function LoginForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
@@ -191,7 +154,7 @@ export function LoginForm() {
                       {...field}
                       disabled={isAnyLoading || step !== 'email'}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && step === 'email') {
                           e.preventDefault();
                           handleContinue();
                         }
@@ -209,7 +172,12 @@ export function LoginForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Please enter your password to continue.</FormLabel>
+                     <div className="flex justify-between items-end">
+                        <FormLabel>Password</FormLabel>
+                        <Button asChild variant="link" size="sm" className="px-0 h-auto -mb-1" disabled={isAnyLoading}>
+                            <Link href="/reset-password">Forgot password?</Link>
+                        </Button>
+                    </div>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -230,16 +198,14 @@ export function LoginForm() {
                         </Button>
                       </div>
                     </FormControl>
-                    <div className="text-right">
-                      <Button asChild variant="link" size="sm" className="px-0 h-auto" disabled={isAnyLoading}>
-                        <Link href="/reset-password">Forgot password?</Link>
-                      </Button>
-                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             )}
+
+            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+
 
             {step === 'email' && (
               <Button type="button" onClick={handleContinue} className="w-full h-10" disabled={isAnyLoading}>
@@ -256,11 +222,11 @@ export function LoginForm() {
             {step === 'google_auth' && (
               <div className="p-4 text-center bg-muted/50 rounded-lg">
                 <p className="text-sm font-semibold">This email is linked to a Google account.</p>
-                <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below to proceed.</p>
+                <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below.</p>
               </div>
             )}
             {step === 'not_found' && (
-              <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
+               <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
                 <p className="text-sm font-semibold">No account found with this email.</p>
                 <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
                   <Link href="/signup">Would you like to sign up?</Link>
