@@ -1,27 +1,60 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+
+const AUTH_TIMEOUT = 15000; // 15 seconds
 
 export default function AuthCallback() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // We wait for the loading to be false, which indicates auth state has been checked.
-    if (!loading) {
-      // If the user object is available, redirect to the dashboard.
+    // Set a timeout for the authentication process
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setError("Authentication timed out. Please try again.");
+        setTimeout(() => router.push('/login'), 5000);
+      }
+    }, AUTH_TIMEOUT);
+
+    // If loading is finished, check the result
+    if (!loading && !error) {
+      clearTimeout(timeoutId); // Clear the timeout as we have a result
       if (user) {
+        // On success, redirect to the dashboard
         router.push('/dashboard');
       } else {
-        // If there's no user, it means login failed or was cancelled.
-        // Redirect to the login page.
-        router.push('/login');
+        // On failure, set an error and redirect after a delay
+        setError("Authentication failed. You will be redirected to the login page.");
+        setTimeout(() => router.push('/login'), 5000);
       }
     }
-  }, [user, loading, router]);
+
+    // Cleanup the timeout if the component unmounts
+    return () => clearTimeout(timeoutId);
+
+  }, [user, loading, router, error]);
+
+  // If there's an error, display it
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Authentication Error</AlertTitle>
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   // This is the content that will be displayed while authentication is in progress.
   return (
