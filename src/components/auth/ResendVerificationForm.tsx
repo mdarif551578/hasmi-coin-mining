@@ -17,44 +17,61 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification, signOut } from "firebase/auth";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
+  password: z.string().min(1, { message: "Password is required." }),
 });
 
 export function ResendVerificationForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      password: ""
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setError(null);
+    let tempUserCredential;
     try {
-      // We can't directly send a verification email without a signed-in user object.
-      // A common workaround is to use the password reset flow, which sends an email
-      // if the user exists, confirming the email is registered. Then we can guide them.
-      // For this app, we'll tell them if an account exists, they'll get an email.
-      // The most secure way is a backend function, but for client-side only:
-      // We will re-use the password reset function as it safely checks for an existing user 
-      // before sending an email. We will just change the UI text to imply verification.
-      await sendPasswordResetEmail(auth, values.email);
+      // Temporarily sign in the user to get the user object
+      tempUserCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = tempUserCredential.user;
+
+      if (user.emailVerified) {
+        setError("This email address has already been verified.");
+        setIsLoading(false);
+        // Sign out the temporary session
+        await signOut(auth);
+        return;
+      }
+
+      // Send the verification email
+      await sendEmailVerification(user);
       setIsSubmitted(true);
 
     } catch (err: any) {
-       // We show success even on error to prevent email enumeration attacks.
-       // An attacker could use this form to see which emails are registered.
-      setIsSubmitted(true); 
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+            setError("Invalid credentials. We could not verify your identity to resend the email.");
+        } else {
+            setError("An unexpected error occurred. Please try again.");
+        }
     } finally {
+        // Ensure the user is signed out after the operation
+        if (tempUserCredential) {
+            await signOut(auth);
+        }
         setIsLoading(false);
     }
   }
@@ -65,7 +82,7 @@ export function ResendVerificationForm() {
             <CardHeader>
                 <CardTitle className="text-xl">Check your email</CardTitle>
                 <CardDescription>
-                    If an account exists for {form.getValues("email")}, a new verification link has been sent.
+                    A new verification link has been sent to {form.getValues("email")}.
                     Don't forget to check your spam folder!
                 </CardDescription>
             </CardHeader>
@@ -84,10 +101,9 @@ export function ResendVerificationForm() {
     <Card className="rounded-2xl shadow-lg">
       <CardHeader>
         <CardTitle className="text-xl">Resend Verification Email</CardTitle>
-        <CardDescription>Enter your email and we'll send you a new verification link if your account exists.</CardDescription>
+        <CardDescription>Enter your email and password to receive a new verification link.</CardDescription>
       </CardHeader>
       <CardContent>
-        {error && <p className="text-sm font-medium text-destructive mb-4">{error}</p>}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -103,6 +119,38 @@ export function ResendVerificationForm() {
                 </FormItem>
               )}
             />
+             <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        {...field}
+                        disabled={isLoading}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+            
             <Button type="submit" className="w-full h-10" disabled={isLoading}>{isLoading ? "Sending..." : "Send Verification Link"}</Button>
           </form>
         </Form>
