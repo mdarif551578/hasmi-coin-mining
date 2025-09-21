@@ -5,15 +5,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  GoogleAuthProvider,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   updateProfile,
-  getRedirectResult,
   User,
-  signInWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -92,18 +87,6 @@ export const signUp = async (name: string, email:string, password: string): Prom
     await createUserDocument(userCredential.user);
     return {};
   } catch (error) {
-    return { error };
-  }
-};
-
-export const signInWithGoogle = async (): Promise<{ error?: any }> => {
-  const provider = new GoogleAuthProvider();
-  try {
-    // This initiates the redirect. The result is handled on the /auth/callback page.
-    await signInWithRedirect(auth, provider);
-    return {};
-  } catch (error) {
-    console.error("Google sign-in redirect error:", error);
     return { error };
   }
 };

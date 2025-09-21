@@ -17,10 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Separator } from "../ui/separator";
-import { signInWithGoogle } from "@/lib/auth";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword, fetchSignInMethodsForEmail } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
@@ -30,24 +28,12 @@ const formSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
-type Step = "email" | "password" | "google_auth" | "not_found";
-
-const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.242,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-    </svg>
-);
 
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [step, setStep] = useState<Step>("email");
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -58,47 +44,12 @@ export function LoginForm() {
     },
   });
 
-  async function checkAccountType(email: string): Promise<Step> {
-    try {
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (signInMethods.length === 0) return "not_found";
-      if (signInMethods.includes('password')) return "password";
-      if (signInMethods.includes('google.com')) return "google_auth";
-      return "google_auth"; // Fallback for other providers
-    } catch (err: any) {
-      if (err.code === 'auth/invalid-email') {
-        // This can happen if email enumeration protection is on.
-        // We'll proceed assuming it might be a password account, 
-        // and let the final sign-in attempt handle the error.
-        return "password";
-      }
-      console.error("Error checking account type:", err);
-      setError("Could not verify your email. Please try again.");
-      return "not_found";
-    }
-  }
-
-  async function handleContinue() {
-    setIsLoading(true);
-    setError(null);
-    const email = form.getValues("email");
-    const emailState = await form.trigger("email");
-    if (!emailState) {
-      setIsLoading(false);
-      return;
-    }
-    const accountType = await checkAccountType(email);
-    setStep(accountType);
-    setIsLoading(false);
-  }
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (step !== 'password' || !values.password) return;
     setIsLoading(true);
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/auth/callback');
+      router.push('/dashboard');
     } catch (err: any) {
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
         setError("Invalid credentials. Please check your email and password.");
@@ -111,27 +62,6 @@ export function LoginForm() {
       setIsLoading(false);
     }
   }
-
-  async function handleGoogleSignIn() {
-    setIsGoogleLoading(true);
-    setError(null);
-    try {
-      await signInWithGoogle();
-      // The redirect will be handled by the /auth/callback page
-    } catch (err) {
-      console.error("Google sign-in error:", err);
-      setError("An unexpected error occurred with Google Sign-In.");
-      setIsGoogleLoading(false);
-    }
-  }
-  
-  const isAnyLoading = isLoading || isGoogleLoading;
-
-  const resetForm = () => {
-    form.reset({ email: "", password: "" });
-    setStep('email');
-    setError(null);
-  };
 
   return (
     <Card className="rounded-2xl shadow-lg">
@@ -152,13 +82,7 @@ export function LoginForm() {
                     <Input
                       placeholder="you@example.com"
                       {...field}
-                      disabled={isAnyLoading || step !== 'email'}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && step === 'email') {
-                          e.preventDefault();
-                          handleContinue();
-                        }
-                      }}
+                      disabled={isLoading}
                     />
                   </FormControl>
                   <FormMessage />
@@ -166,101 +90,52 @@ export function LoginForm() {
               )}
             />
 
-            {step === "password" && (
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                     <div className="flex justify-between items-end">
-                        <FormLabel>Password</FormLabel>
-                        <Button asChild variant="link" size="sm" className="px-0 h-auto -mb-1" disabled={isAnyLoading}>
-                            <Link href="/reset-password">Forgot password?</Link>
-                        </Button>
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                   <div className="flex justify-between items-end">
+                      <FormLabel>Password</FormLabel>
+                      <Button asChild variant="link" size="sm" className="px-0 h-auto -mb-1" disabled={isLoading}>
+                          <Link href="/reset-password">Forgot password?</Link>
+                      </Button>
+                  </div>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        {...field}
+                        disabled={isLoading}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </Button>
                     </div>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          {...field}
-                          disabled={isAnyLoading}
-                          autoFocus
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute inset-y-0 right-0 h-full px-3"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-
-
-            {step === 'email' && (
-              <Button type="button" onClick={handleContinue} className="w-full h-10" disabled={isAnyLoading}>
-                {isLoading ? 'Checking...' : 'Continue'}
-              </Button>
-            )}
-
-            {step === 'password' && (
-              <Button type="submit" className="w-full h-10" disabled={isAnyLoading}>
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </Button>
-            )}
-
-            {step === 'google_auth' && (
-              <div className="p-4 text-center bg-muted/50 rounded-lg">
-                <p className="text-sm font-semibold">This email is linked to a Google account.</p>
-                <p className="text-sm text-muted-foreground">Please use the 'Sign in with Google' button below.</p>
-              </div>
-            )}
-            {step === 'not_found' && (
-               <div className="p-3 text-center bg-destructive/10 text-destructive-foreground rounded-lg">
-                <p className="text-sm font-semibold">No account found with this email.</p>
-                <Button asChild variant="link" size="sm" className="px-1 text-destructive-foreground underline h-auto" disabled={isAnyLoading}>
-                  <Link href="/signup">Would you like to sign up?</Link>
-                </Button>
-              </div>
-            )}
+            
+            <Button type="submit" className="w-full h-10" disabled={isLoading}>
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </Button>
           </form>
         </Form>
 
-        {(step !== 'email') && (
-          <Button variant="link" size="sm" className="px-0 mt-2" onClick={resetForm} disabled={isAnyLoading}>
-            Use another email
-          </Button>
-        )}
-
-        <div className="relative my-6">
-          <Separator />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <span className="bg-card px-2 text-xs text-muted-foreground">OR</span>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <Button variant="outline" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isAnyLoading}>
-            {isGoogleLoading ? 'Redirecting...' : (
-              <>
-                <GoogleIcon className="mr-2" />
-                Sign in with Google
-              </>
-            )}
-          </Button>
-        </div>
         <div className="mt-6 text-center text-sm">
           Don't have an account?{" "}
-          <Button asChild variant="link" size="sm" className="px-1" disabled={isAnyLoading}>
+          <Button asChild variant="link" size="sm" className="px-1" disabled={isLoading}>
             <Link href="/signup">Sign up</Link>
           </Button>
         </div>
