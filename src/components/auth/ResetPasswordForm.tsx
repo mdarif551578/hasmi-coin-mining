@@ -57,7 +57,9 @@ export function ResetPasswordForm() {
         <Card className="rounded-2xl shadow-lg">
             <CardHeader>
                 <CardTitle className="text-xl">Check your email</CardTitle>
-                <CardDescription>We've sent a password reset link to your email address.</CardDescription>
+                <CardDescription>
+                    We've sent a password reset link to your email address. Don't forget to check your spam folder!
+                </CardDescription>
             </CardHeader>
             <CardContent>
                  <div className="mt-6 text-center text-sm">
