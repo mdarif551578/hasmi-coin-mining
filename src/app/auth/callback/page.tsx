@@ -3,43 +3,63 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth';
+import { getRedirectResult } from 'firebase/auth';
+import { auth, createUserDocument } from '@/lib/auth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
-const AUTH_TIMEOUT = 15000; // 15 seconds
+const AUTH_TIMEOUT = 20000; // 20 seconds
 
 export default function AuthCallback() {
-  const { user, loading } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Set a timeout for the authentication process
+    let isMounted = true;
     const timeoutId = setTimeout(() => {
-      if (loading) {
-        setError("Authentication timed out. Please try again.");
-        setTimeout(() => router.push('/login'), 5000);
-      }
+        if (isMounted) {
+            setError("Authentication timed out. Please try logging in again.");
+            setTimeout(() => router.push('/login'), 5000);
+        }
     }, AUTH_TIMEOUT);
 
-    // If loading is finished, check the result
-    if (!loading && !error) {
-      clearTimeout(timeoutId); // Clear the timeout as we have a result
-      if (user) {
-        // On success, redirect to the dashboard
-        router.push('/dashboard');
-      } else {
-        // On failure, set an error and redirect after a delay
-        setError("Authentication failed. You will be redirected to the login page.");
-        setTimeout(() => router.push('/login'), 5000);
-      }
-    }
+    const handleRedirect = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result && result.user) {
+                // User signed in.
+                await createUserDocument(result.user);
+                if(isMounted) {
+                    router.push('/dashboard');
+                }
+            } else {
+                // This can happen if the user cancels the login, or if they just visit the callback URL directly.
+                // We also check the current user state as a fallback.
+                if (auth.currentUser) {
+                     if(isMounted) router.push('/dashboard');
+                } else {
+                     if(isMounted) router.push('/login');
+                }
+            }
+        } catch (e: any) {
+            if (isMounted) {
+                console.error("Firebase Auth Error:", e);
+                setError(`Authentication failed: ${e.message}. You will be redirected to the login page.`);
+                setTimeout(() => router.push('/login'), 5000);
+            }
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    };
+    
+    handleRedirect();
 
-    // Cleanup the timeout if the component unmounts
-    return () => clearTimeout(timeoutId);
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
 
-  }, [user, loading, router, error]);
+  }, [router]);
 
   // If there's an error, display it
   if (error) {

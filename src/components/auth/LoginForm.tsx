@@ -71,14 +71,17 @@ export function LoginForm() {
       }
       return "google_auth"; // Fallback for other social providers
     } catch (error: any) {
-      if (error.code === 'auth/operation-not-allowed') {
-        toast({
-            title: "Advanced Login Active",
-            description: "Please enter your password. If you use Google, use the Google Sign-In button.",
-        });
-        return "password"; 
+      if (error.code === 'auth/invalid-email') {
+        // This error is thrown by fetchSignInMethodsForEmail for non-existent emails
+        // when email enumeration protection is enabled.
+        return "not_found";
       }
       console.error("Error checking account type:", error);
+      toast({
+        title: "Error",
+        description: "Could not verify email. Please try again.",
+        variant: "destructive",
+      });
       return "not_found";
     }
   }
@@ -146,8 +149,9 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
     try {
+      // signInWithGoogle from lib/auth will initiate the redirect.
+      // The result will be handled by the /auth/callback page.
       await signInWithGoogle();
-      // On success, the page will redirect via AuthProvider.
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast({

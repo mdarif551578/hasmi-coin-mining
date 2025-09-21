@@ -12,7 +12,8 @@ import {
   updateProfile,
   getRedirectResult,
   User,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -34,7 +35,7 @@ const generateReferralCode = () => {
     return `HASMI-${code}`;
 };
 
-const createUserDocument = async (user: User) => {
+export const createUserDocument = async (user: User) => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
@@ -67,23 +68,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
     });
-
-    // Check for redirect result
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result && result.user) {
-          await createUserDocument(result.user);
-          setUser(result.user);
-        }
-      }).catch((error) => {
-        console.error("Error processing redirect result:", error);
-      }).finally(() => {
-        setLoading(false);
-      });
 
     return () => unsubscribe();
   }, []);
@@ -111,8 +99,8 @@ export const signUp = async (name: string, email:string, password: string): Prom
 export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
+    // This initiates the redirect. The result is handled on the /auth/callback page.
     await signInWithRedirect(auth, provider);
-    // The result is handled by getRedirectResult in the AuthProvider
     return {};
   } catch (error) {
     console.error("Google sign-in redirect error:", error);
