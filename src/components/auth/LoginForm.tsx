@@ -50,7 +50,9 @@ export function LoginForm() {
       
       if (!userCredential.user.emailVerified) {
         setError("Please verify your email before signing in. Check your inbox and spam folder for the verification link.");
-        await sendEmailVerification(userCredential.user); // Optionally re-send verification email
+        // Optionally re-send verification email, but be careful with spamming.
+        // await sendEmailVerification(userCredential.user); 
+        await auth.signOut(); // Sign the user out as they are not verified
         setIsLoading(false);
         return;
       }
@@ -64,10 +66,7 @@ export function LoginForm() {
       } else {
         setError("An unexpected error occurred during sign-in.");
       }
-    } finally {
-      if (auth.currentUser?.emailVerified) {
-         setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   }
 

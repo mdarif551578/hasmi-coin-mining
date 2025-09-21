@@ -82,12 +82,12 @@ export function SignupForm() {
             <CardTitle className="text-xl">Check your email</CardTitle>
             <CardDescription>
                 We've sent a verification link to <span className="font-bold text-foreground">{userEmail}</span>.
-                Please check your inbox and spam folder.
+                Please check your inbox and spam folder to activate your account.
             </CardDescription>
         </CardHeader>
         <CardContent>
             <div className="text-center text-sm">
-                <p className="text-muted-foreground mb-4">Click the link in the email to activate your account.</p>
+                <p className="text-muted-foreground mb-4">Click the link in the email to finish signing up.</p>
                 <Button asChild className="w-full">
                     <Link href="/login">Back to Sign In</Link>
                 </Button>
@@ -153,7 +153,7 @@ export function SignupForm() {
                         className="absolute inset-y-0 right-0 h-full px-3"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? <EyeOff /> : <Eye />}
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </Button>
                     </div>
                   </FormControl>
