@@ -112,6 +112,7 @@ export const signInWithGoogle = async (): Promise<{ error?: any }> => {
   const provider = new GoogleAuthProvider();
   try {
     await signInWithRedirect(auth, provider);
+    // The result is handled by getRedirectResult in the AuthProvider
     return {};
   } catch (error) {
     console.error("Google sign-in redirect error:", error);
