@@ -1,3 +1,4 @@
+
 export type Transaction = {
   id: string;
   type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward';
@@ -45,3 +46,12 @@ export type MarketListing = {
   rate: number;
   status: 'open' | 'sold' | 'pending';
 }
+
+export type WithdrawalRequest = {
+  id: string;
+  amount: number;
+  method: 'bkash' | 'nagad';
+  accountInfo: string;
+  status: 'pending' | 'approved' | 'rejected';
+  date: string;
+};

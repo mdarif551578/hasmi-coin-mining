@@ -1,4 +1,4 @@
-import type { Transaction, MiningPlan, NftPlan, User, Task, MarketListing } from './types';
+import type { Transaction, MiningPlan, NftPlan, User, Task, MarketListing, WithdrawalRequest } from './types';
 
 export const user: User = {
     name: "Hasmi",
@@ -13,12 +13,17 @@ export const user: User = {
 export const transactions: Transaction[] = [
   { id: '1', type: 'deposit', amount: 500, status: 'completed', date: '2024-07-20' },
   { id: '2', type: 'mining', amount: 10.5, status: 'completed', date: '2024-07-20' },
-  { id: '3', type: 'withdraw', amount: 100, status: 'pending', date: '2024-07-19' },
+  { id: '3', type: 'withdraw', amount: 100, status: 'completed', date: '2024-07-19' },
   { id: '4', type: 'task', amount: 5, status: 'completed', date: '2024-07-19' },
   { id: '5', type: 'marketplace-sell', amount: 50, status: 'completed', date: '2024-07-18' },
   { id: '6', type: 'referral', amount: 20, status: 'completed', date: '2024-07-17' },
   { id: '7', type: 'marketplace-buy', amount: 25, status: 'completed', date: '2024-07-16' },
   { id: '8', type: 'nft-reward', amount: 150, status: 'completed', date: '2024-07-15' },
+];
+
+export const pendingWithdrawals: WithdrawalRequest[] = [
+  { id: 'wd-1', amount: 25, method: 'bkash', accountInfo: '01700000001', status: 'pending', date: '2024-07-21' },
+  { id: 'wd-2', amount: 40, method: 'nagad', accountInfo: '01800000002', status: 'pending', date: '2024-07-20' },
 ];
 
 export const paidPlans: MiningPlan[] = [
