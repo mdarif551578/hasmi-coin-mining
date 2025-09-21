@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { user } from "@/lib/data";
-import { Wallet, Plus, Repeat } from "lucide-react";
+import { Wallet, Plus, Repeat, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Separator } from "../ui/separator";
 
@@ -25,14 +25,20 @@ export function WalletCard({ className }: { className?: string }) {
                     <p className="text-xs text-muted-foreground">USD Balance</p>
                 </div>
             </CardContent>
-            <CardFooter className="gap-2 flex-col sm:flex-row">
+            <CardFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Button size="sm" className="w-full h-9" asChild>
                     <Link href="/deposit">
                         <Plus className="mr-2" />
-                        Deposit USD
+                        Deposit
                     </Link>
                 </Button>
-                <Button variant="secondary" size="sm" className="w-full h-9" asChild>
+                 <Button variant="secondary" size="sm" className="w-full h-9" asChild>
+                    <Link href="/withdraw">
+                        <ArrowUpRight className="mr-2" />
+                        Withdraw
+                    </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="w-full h-9" asChild>
                     <Link href="/exchange">
                         <Repeat className="mr-2" />
                         Exchange
