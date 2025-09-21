@@ -1,102 +1,159 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { user, pendingWithdrawals as initialPendingWithdrawals } from "@/lib/data";
+import { user as mockUser } from "@/lib/data";
 import { ArrowUpRight, Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import type { WithdrawalRequest } from "@/lib/types";
+import { useAuth } from "@/lib/auth";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, query, where, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { useUserData } from "@/hooks/use-user-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WithdrawPage() {
     const { toast } = useToast();
+    const { user } = useAuth();
+    const { userData, loading: userDataLoading } = useUserData();
+
     const [amount, setAmount] = useState("");
     const [method, setMethod] = useState<"bkash" | "nagad" | "">("");
     const [accountInfo, setAccountInfo] = useState("");
 
-    // State for managing pending withdrawals
-    const [pendingWithdrawals, setPendingWithdrawals] = useState<WithdrawalRequest[]>(initialPendingWithdrawals);
+    const [pendingWithdrawals, setPendingWithdrawals] = useState<WithdrawalRequest[]>([]);
     const [isUpdateDialogOpen, setUpdateDialogOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid), where("status", "==", "pending"));
+        
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const requests: WithdrawalRequest[] = [];
+            querySnapshot.forEach((doc) => {
+                requests.push({ id: doc.id, ...doc.data() } as WithdrawalRequest);
+            });
+            setPendingWithdrawals(requests);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user || !userData) return;
+
+        setIsLoading(true);
         const withdrawAmount = parseFloat(amount);
-        if (withdrawAmount > user.usdBalance) {
+        if (withdrawAmount > userData.usd_balance) {
             toast({
                 title: "Insufficient USD Balance",
                 description: "You do not have enough funds to complete this withdrawal.",
                 variant: "destructive",
             });
+            setIsLoading(false);
             return;
         }
-        toast({
-            title: "Withdrawal Request Submitted",
-            description: `Your request to withdraw $${amount} has been received and is pending approval.`,
-        });
-        // In a real app, this would be sent to a backend and we would get an ID back
-        const newRequest: WithdrawalRequest = {
-            id: `wd-${Date.now()}`,
-            amount: withdrawAmount,
-            method: method as "bkash" | "nagad",
-            accountInfo,
-            status: 'pending',
-            date: new Date().toISOString().split('T')[0],
-        };
-        setPendingWithdrawals(prev => [...prev, newRequest]);
 
-        setAmount("");
-        setMethod("");
-        setAccountInfo("");
+        try {
+            await addDoc(collection(db, "withdrawals"), {
+                userId: user.uid,
+                amount: withdrawAmount,
+                method,
+                accountInfo,
+                status: 'pending',
+                date: new Date().toISOString(),
+                createdAt: serverTimestamp(),
+            });
+
+            toast({
+                title: "Withdrawal Request Submitted",
+                description: `Your request to withdraw $${amount} has been received and is pending approval.`,
+            });
+
+            setAmount("");
+            setMethod("");
+            setAccountInfo("");
+        } catch (error) {
+            console.error("Error submitting withdrawal request:", error);
+            toast({
+                title: "Error",
+                description: "Could not submit withdrawal request. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleUpdateRequest = (e: React.FormEvent) => {
+    const handleUpdateRequest = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedRequest) return;
+        if (!selectedRequest || !userData) return;
         
+        setIsLoading(true);
         const updatedAmount = parseFloat(amount);
-        if (updatedAmount > user.usdBalance) {
+        if (updatedAmount > userData.usd_balance) {
              toast({
                 title: "Insufficient USD Balance",
                 description: "You do not have enough funds for this updated amount.",
                 variant: "destructive",
             });
+            setIsLoading(false);
             return;
         }
 
-        setPendingWithdrawals(prev => 
-            prev.map(req => 
-                req.id === selectedRequest.id 
-                ? { ...req, amount: updatedAmount, method: method as "bkash" | "nagad", accountInfo } 
-                : req
-            )
-        );
+        try {
+            const requestDocRef = doc(db, "withdrawals", selectedRequest.id);
+            await updateDoc(requestDocRef, {
+                amount: updatedAmount,
+                method,
+                accountInfo,
+            });
 
-        toast({
-            title: "Request Updated",
-            description: "Your withdrawal request has been successfully updated.",
-        });
+            toast({
+                title: "Request Updated",
+                description: "Your withdrawal request has been successfully updated.",
+            });
 
-        setUpdateDialogOpen(false);
-        setSelectedRequest(null);
-        setAmount("");
-        setMethod("");
-        setAccountInfo("");
+            setUpdateDialogOpen(false);
+            setSelectedRequest(null);
+        } catch (error) {
+            console.error("Error updating request:", error);
+             toast({
+                title: "Error",
+                description: "Could not update request. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleDeleteRequest = (id: string) => {
-        setPendingWithdrawals(prev => prev.filter(req => req.id !== id));
-        toast({
-            title: "Request Deleted",
-            description: "Your withdrawal request has been cancelled.",
-        });
+    const handleDeleteRequest = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "withdrawals", id));
+            toast({
+                title: "Request Deleted",
+                description: "Your withdrawal request has been cancelled.",
+            });
+        } catch (error) {
+            console.error("Error deleting request:", error);
+             toast({
+                title: "Error",
+                description: "Could not delete request. Please try again.",
+                variant: "destructive",
+            });
+        }
     };
 
     const openUpdateDialog = (request: WithdrawalRequest) => {
@@ -106,6 +163,8 @@ export default function WithdrawPage() {
         setAccountInfo(request.accountInfo);
         setUpdateDialogOpen(true);
     };
+
+    const currentUsdBalance = userData ? userData.usd_balance : mockUser.usdBalance;
 
     return (
         <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
@@ -118,7 +177,11 @@ export default function WithdrawPage() {
                     <CardDescription>Funds available for withdrawal.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-3xl font-bold">${user.usdBalance.toFixed(2)}</div>
+                    {userDataLoading ? (
+                        <Skeleton className="h-9 w-32" />
+                    ) : (
+                        <div className="text-3xl font-bold">${currentUsdBalance.toFixed(2)}</div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -136,12 +199,12 @@ export default function WithdrawPage() {
                                     <p className="text-xs text-muted-foreground">{request.accountInfo}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openUpdateDialog(request)}>
+                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openUpdateDialog(request)} disabled={request.status !== 'pending'}>
                                         <Edit className="size-4" />
                                     </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={request.status !== 'pending'}>
                                                 <Trash2 className="size-4" />
                                             </Button>
                                         </AlertDialogTrigger>
@@ -208,9 +271,8 @@ export default function WithdrawPage() {
                                 required
                             />
                         </div>
-                        <Button type="submit" className="w-full h-10" disabled={!method || !amount || !accountInfo}>
-                            <ArrowUpRight className="mr-2" />
-                            Submit Request
+                        <Button type="submit" className="w-full h-10" disabled={!method || !amount || !accountInfo || isLoading}>
+                            {isLoading ? "Submitting..." : <><ArrowUpRight className="mr-2" />Submit Request</>}
                         </Button>
                     </form>
                 </CardContent>
@@ -258,7 +320,9 @@ export default function WithdrawPage() {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => setUpdateDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={!method || !amount || !accountInfo}>Save Changes</Button>
+                            <Button type="submit" disabled={!method || !amount || !accountInfo || isLoading}>
+                                {isLoading ? "Saving..." : "Save Changes"}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -266,3 +330,5 @@ export default function WithdrawPage() {
         </div>
     );
 }
+
+    

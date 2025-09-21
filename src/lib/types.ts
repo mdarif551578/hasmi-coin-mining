@@ -49,6 +49,7 @@ export type MarketListing = {
 
 export type WithdrawalRequest = {
   id: string;
+  userId: string;
   amount: number;
   method: 'bkash' | 'nagad';
   accountInfo: string;
