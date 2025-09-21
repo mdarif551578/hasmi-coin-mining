@@ -10,9 +10,7 @@ import {
   updateProfile,
   User,
   sendEmailVerification,
-  GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -68,22 +66,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        createUserDocument(currentUser);
+      }
       setUser(currentUser);
       setLoading(false);
     });
-
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          createUserDocument(result.user);
-        }
-      })
-      .catch((error) => {
-        console.error("Error processing redirect result:", error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
 
     return () => unsubscribe();
   }, []);
@@ -102,7 +90,8 @@ export const signUp = async (name: string, email:string, password: string): Prom
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
     await sendEmailVerification(userCredential.user);
-    await createUserDocument(userCredential.user);
+    await createUserDocument(userCredential.user); // Ensure document is created on signup
+    await firebaseSignOut(auth); // Sign out user until they verify email
     return {};
   } catch (error) {
     return { error };
@@ -127,8 +116,3 @@ export const resetPassword = async (email: string): Promise<{ error?: any }> => 
         return { error };
     }
 }
-
-export const signInWithGoogle = () => {
-  const provider = new GoogleAuthProvider();
-  signInWithRedirect(auth, provider);
-};

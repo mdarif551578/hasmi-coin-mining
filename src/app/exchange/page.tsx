@@ -7,23 +7,27 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { user } from "@/lib/data";
 import { Repeat, Store } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { useUserData } from "@/hooks/use-user-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const USD_TO_HC_RATE = 110; // 1 USD = 110 HC
 
 export default function ExchangePage() {
     const { toast } = useToast();
     const [usdAmount, setUsdAmount] = useState("");
-    
+    const { userData, loading } = useUserData();
+
     const hcToReceive = usdAmount ? (parseFloat(usdAmount) * USD_TO_HC_RATE).toLocaleString() : "0";
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!userData) return;
+        
         const amount = parseFloat(usdAmount);
-        if (amount > user.usdBalance) {
+        if (amount > userData.usd_balance) {
              toast({
                 title: "Insufficient Funds",
                 description: "You do not have enough USD to complete this exchange.",
@@ -38,6 +42,9 @@ export default function ExchangePage() {
         });
         setUsdAmount("");
     };
+
+    const hcBalance = userData?.wallet_balance ?? 0;
+    const usdBalance = userData?.usd_balance ?? 0;
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
@@ -57,12 +64,20 @@ export default function ExchangePage() {
         </CardHeader>
         <CardContent className="space-y-4">
              <div>
-                <div className="text-2xl font-bold">${user.usdBalance.toFixed(2)} <span className="text-lg font-normal text-muted-foreground">USD</span></div>
+                 {loading ? (
+                    <Skeleton className="h-8 w-32 mb-1" />
+                ) : (
+                    <div className="text-2xl font-bold">${usdBalance.toFixed(2)} <span className="text-lg font-normal text-muted-foreground">USD</span></div>
+                )}
                 <p className="text-xs text-muted-foreground">USD Balance</p>
             </div>
             <Separator />
             <div>
-                <div className="text-2xl font-bold">{user.walletBalance.toLocaleString()} <span className="text-lg font-normal text-muted-foreground">HC</span></div>
+                 {loading ? (
+                    <Skeleton className="h-8 w-40 mb-1" />
+                ) : (
+                    <div className="text-2xl font-bold">{hcBalance.toLocaleString()} <span className="text-lg font-normal text-muted-foreground">HC</span></div>
+                 )}
                 <p className="text-xs text-muted-foreground">Hasmi Coin Balance</p>
             </div>
         </CardContent>
@@ -91,6 +106,7 @@ export default function ExchangePage() {
                     onChange={(e) => setUsdAmount(e.target.value)} 
                     required 
                     min="1"
+                    disabled={loading || !userData}
                 />
             </div>
 
@@ -99,7 +115,7 @@ export default function ExchangePage() {
                 <p className="font-bold text-xl text-primary">{hcToReceive} HC</p>
             </div>
 
-            <Button type="submit" className="w-full h-10">
+            <Button type="submit" className="w-full h-10" disabled={loading || !userData || !usdAmount}>
                 <Repeat className="mr-2"/>
                 Confirm Exchange
             </Button>
