@@ -9,6 +9,7 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   User,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -84,6 +85,7 @@ export const signUp = async (name: string, email:string, password: string): Prom
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
+    await sendEmailVerification(userCredential.user);
     await createUserDocument(userCredential.user);
     return {};
   } catch (error) {

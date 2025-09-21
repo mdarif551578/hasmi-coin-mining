@@ -18,8 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { useToast } from "@/hooks/use-toast";
+import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -31,7 +30,6 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const router = useRouter();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +46,15 @@ export function LoginForm() {
     setIsLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      
+      if (!userCredential.user.emailVerified) {
+        setError("Please verify your email before signing in. Check your inbox and spam folder for the verification link.");
+        await sendEmailVerification(userCredential.user); // Optionally re-send verification email
+        setIsLoading(false);
+        return;
+      }
+
       router.push('/dashboard');
     } catch (err: any) {
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
@@ -59,7 +65,9 @@ export function LoginForm() {
         setError("An unexpected error occurred during sign-in.");
       }
     } finally {
-      setIsLoading(false);
+      if (auth.currentUser?.emailVerified) {
+         setIsLoading(false);
+      }
     }
   }
 

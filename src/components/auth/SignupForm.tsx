@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import { signUp } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, MailCheck } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -33,6 +33,8 @@ export function SignupForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,6 +48,7 @@ export function SignupForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     const { name, email, password } = values;
+    setUserEmail(email);
 
     const { error } = await signUp(name, email, password);
 
@@ -64,10 +67,34 @@ export function SignupForm() {
                 variant: "destructive",
             });
         }
+        setIsLoading(false);
     } else {
-      router.push('/dashboard');
+      setIsSubmitted(true);
+      setIsLoading(false);
     }
-    setIsLoading(false);
+  }
+
+  if (isSubmitted) {
+     return (
+      <Card className="rounded-2xl shadow-lg">
+        <CardHeader className="items-center text-center">
+            <MailCheck className="size-12 text-primary mb-2" />
+            <CardTitle className="text-xl">Check your email</CardTitle>
+            <CardDescription>
+                We've sent a verification link to <span className="font-bold text-foreground">{userEmail}</span>.
+                Please check your inbox and spam folder.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="text-center text-sm">
+                <p className="text-muted-foreground mb-4">Click the link in the email to activate your account.</p>
+                <Button asChild className="w-full">
+                    <Link href="/login">Back to Sign In</Link>
+                </Button>
+            </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
