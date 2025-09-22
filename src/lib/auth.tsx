@@ -45,27 +45,26 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
     const userDocSnap = await getDoc(userDocRef);
 
     let referredBy = null;
-    let hasProcessedReferral = false;
 
-    // --- Referral Logic ---
-    // This block should run if a referral code is provided, even if the user document exists,
-    // as long as the user hasn't been referred before.
+    // --- Referral Logic: Process this first, regardless of user doc existence ---
     if (referralCode && !userDocSnap.data()?.referred_by) {
-        const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const referringUserDoc = querySnapshot.docs[0];
-            referredBy = referringUserDoc.id;
-            hasProcessedReferral = true; // Mark that we found a valid referrer
+        try {
+            const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
+            const querySnapshot = await getDocs(q);
 
-            // Create pending referral bonus document
-            try {
+            if (!querySnapshot.empty) {
+                const referringUserDoc = querySnapshot.docs[0];
+                referredBy = referringUserDoc.id;
+
+                // Fetch bonus settings and create the pending bonus document
                 const settingsDocRef = doc(db, 'settings', 'exchangeRates');
                 const settingsDoc = await getDoc(settingsDocRef);
+
                 if (settingsDoc.exists()) {
                     const settingsData = settingsDoc.data();
                     const bonusConfig = settingsData.referral_bonus;
                     if (bonusConfig && bonusConfig.referrer_bonus > 0 && bonusConfig.referee_bonus > 0) {
+                        // This is the crucial step to create the document
                         await addDoc(collection(db, "referral_bonuses"), {
                             referrerId: referredBy,
                             refereeId: user.uid,
@@ -76,9 +75,9 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
                         });
                     }
                 }
-            } catch (bonusError) {
-                console.error("Error creating referral bonus document:", bonusError);
             }
+        } catch (error) {
+            console.error("Error processing referral or creating bonus document:", error);
         }
     }
 
@@ -104,9 +103,8 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
         } catch (error) {
             console.error("Error creating user document:", error);
         }
-    } else if (hasProcessedReferral) {
-        // If the user document already exists but we just processed a referral,
-        // update the `referred_by` field.
+    } else if (referredBy && !userDocSnap.data()?.referred_by) {
+        // If the user document already exists but didn't have a referrer, update it.
          try {
             await setDoc(userDocRef, { referred_by: referredBy }, { merge: true });
         } catch (error) {
