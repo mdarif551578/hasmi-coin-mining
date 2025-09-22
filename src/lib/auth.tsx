@@ -23,15 +23,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
-// Function to generate a random referral code
-const generateReferralCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ01234ranoS';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return `HASMI-${code}`;
+// Function to generate a unique referral code from UID
+const generateReferralCode = async (uid: string) => {
+    // Hash uid
+    const enc = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(uid));
+    const bytes = new Uint8Array(hashBuffer);
+
+    // Base36 encode first 6 bytes
+    let num = 0n;
+    for (let i = 0; i < 6; i++) num = (num << 8n) + BigInt(bytes[i]);
+    const base36 = num.toString(36).toUpperCase();
+
+    // Format: HASMI-XXXXXXX
+    return "HASMI-" + base36.slice(0, 7);
 };
+
 
 export const createUserDocument = async (user: User) => {
     if (!user) return;
@@ -40,7 +47,7 @@ export const createUserDocument = async (user: User) => {
 
     if (!userDocSnap.exists()) {
         const { email, displayName, uid } = user;
-        const referralCode = generateReferralCode();
+        const referralCode = await generateReferralCode(uid);
         
         try {
             await setDoc(userDocRef, {
@@ -68,6 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
+        // This function checks for existence and creates if needed
         createUserDocument(currentUser);
       }
       setUser(currentUser);
@@ -91,7 +99,7 @@ export const signUp = async (name: string, email:string, password: string): Prom
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
     await sendEmailVerification(userCredential.user);
-    await createUserDocument(userCredential.user); // Ensure document is created on signup
+    // createUserDocument is now called by onAuthStateChanged, no need to call it here explicitly.
     await firebaseSignOut(auth); // Sign out user until they verify email
     return {};
   } catch (error) {
