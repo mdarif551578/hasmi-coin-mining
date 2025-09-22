@@ -91,7 +91,7 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
                 referred_by: referredBy,
                 role: 'user',
                 last_claim: new Date(0),
-                createdAt: new Date(),
+                createdAt: serverTimestamp(),
             });
         } catch (error) {
             console.error("Error creating user document:", error);
