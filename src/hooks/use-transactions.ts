@@ -2,11 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import type { Transaction } from '@/lib/types';
-import { format } from 'date-fns';
 
 function formatTimestamp(timestamp: any): string {
     if (!timestamp) return new Date().toISOString();
@@ -30,56 +29,51 @@ export function useTransactions() {
 
     setLoading(true);
 
-    const collectionsToQuery = {
-      deposits: { type: 'deposit', amountField: 'amount', currency: 'USD' },
-      withdrawals: { type: 'withdraw', amountField: 'amount', currency: 'USD' },
-      exchange_requests: { type: 'exchange', amountField: 'hcAmount', currency: 'HC' },
-      referral_bonuses_referrer: { type: 'referral', amountField: 'referrerBonus', currency: 'HC', userIdField: 'referrerId' },
-      referral_bonuses_referee: { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' },
-    };
-    
-    // Store all transactions in a single map to avoid duplicates and handle updates
     const allTransactions = new Map<string, Transaction>();
+    const unsubscribes: (() => void)[] = [];
 
-    const unsubscribes = Object.entries(collectionsToQuery).map(([collectionName, config]) => {
-      const collName = collectionName.startsWith('referral_bonuses') ? 'referral_bonuses' : collectionName;
-      const userIdField = config.userIdField || 'userId';
-
-      // Query without server-side ordering to avoid composite index requirement
-      const q = query(
-        collection(db, collName),
-        where(userIdField, '==', user.uid)
-      );
-
-      return onSnapshot(q, (snapshot) => {
+    const setupSubscription = (collName: string, config: any) => {
+      const q = query(collection(db, collName), where(config.userIdField, '==', user.uid));
+      const unsub = onSnapshot(q, (snapshot) => {
         snapshot.docs.forEach(doc => {
           const data = doc.data();
           const transaction: Transaction = {
-            id: `${config.type}-${doc.id}`, // Create a unique ID for each transaction type
-            type: config.type as Transaction['type'],
+            id: `${config.type}-${doc.id}`,
+            type: config.type,
             amount: data[config.amountField],
             status: data.status,
             date: formatTimestamp(data.createdAt),
-            currency: config.currency as Transaction['currency'],
+            currency: config.currency,
           };
           allTransactions.set(transaction.id, transaction);
         });
 
         const sortedTransactions = Array.from(allTransactions.values())
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         setTransactions(sortedTransactions);
-
+        setLoading(false);
       }, (error) => {
-        console.error(`Error fetching ${collectionName}:`, error);
+        console.error(`Error fetching ${collName}:`, error);
+        setLoading(false);
       });
-    });
+      unsubscribes.push(unsub);
+    };
 
-    const initialLoadTimer = setTimeout(() => setLoading(false), 2500); // Give time for queries to run
+    // Standard transactions
+    setupSubscription('deposits', { type: 'deposit', amountField: 'amount', currency: 'USD', userIdField: 'userId' });
+    setupSubscription('withdrawals', { type: 'withdraw', amountField: 'amount', currency: 'USD', userIdField: 'userId' });
+    setupSubscription('exchange_requests', { type: 'exchange', amountField: 'hcAmount', currency: 'HC', userIdField: 'userId' });
+
+    // Referral bonuses (as referrer)
+    setupSubscription('referral_bonuses', { type: 'referral', amountField: 'referrerBonus', currency: 'HC', userIdField: 'referrerId' });
+
+    // Referral bonuses (as referee)
+    setupSubscription('referral_bonuses', { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' });
+
 
     return () => {
-        unsubscribes.forEach(unsub => unsub());
-        clearTimeout(initialLoadTimer);
+      unsubscribes.forEach(unsub => unsub());
     };
 
   }, [user]);
