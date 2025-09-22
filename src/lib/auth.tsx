@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -51,7 +52,7 @@ export const createUserDocument = async (user: User) => {
                 referral_code: referralCode,
                 referred_by: null,
                 role: 'user',
-                last_claim: null,
+                last_claim: new Date(0),
                 createdAt: new Date(),
             });
         } catch (error) {

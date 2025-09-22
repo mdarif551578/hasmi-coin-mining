@@ -1,120 +1,274 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-
-const depositPackages = [
-    { usd: 10, hc: 1100 },
-    { usd: 20, hc: 2200 },
-    { usd: 50, hc: 5500 },
-    { usd: 100, hc: 11000 },
-]
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth";
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import type { DepositRequest } from "@/lib/types";
+import { Edit, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function DepositPage() {
     const { toast } = useToast();
+    const { user } = useAuth();
+    
     const [amount, setAmount] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [transactionId, setTransactionId] = useState("");
+    const [method, setMethod] = useState<"bkash" | "nagad" | "">("");
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        toast({
-            title: "Deposit Request Submitted",
-            description: "Your deposit request has been received. Please wait for admin approval.",
+    const [pendingDeposits, setPendingDeposits] = useState<DepositRequest[]>([]);
+    const [isUpdateDialogOpen, setUpdateDialogOpen] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [currentTab, setCurrentTab] = useState("bkash");
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "deposits"), where("userId", "==", user.uid), where("status", "==", "pending"));
+        
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const requests: DepositRequest[] = [];
+            querySnapshot.forEach((doc) => {
+                requests.push({ id: doc.id, ...doc.data() } as DepositRequest);
+            });
+            setPendingDeposits(requests);
         });
+
+        return () => unsubscribe();
+    }, [user]);
+    
+    const resetForm = () => {
         setAmount("");
         setPhoneNumber("");
         setTransactionId("");
+        setMethod(currentTab as "bkash" | "nagad");
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user || !method) return;
+
+        setIsLoading(true);
+        try {
+            await addDoc(collection(db, "deposits"), {
+                userId: user.uid,
+                amount: parseFloat(amount),
+                method,
+                phoneNumber,
+                transactionId,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+            });
+
+            toast({
+                title: "Deposit Request Submitted",
+                description: "Your deposit request has been received. Please wait for admin approval.",
+            });
+            resetForm();
+        } catch (error) {
+            console.error("Error submitting deposit:", error);
+            toast({ variant: "destructive", title: "Submission Failed", description: "Could not submit your request. Please try again." });
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    const handleUpdateRequest = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedRequest || !method) return;
+        
+        setIsLoading(true);
+        try {
+            const requestDocRef = doc(db, "deposits", selectedRequest.id);
+            await updateDoc(requestDocRef, {
+                amount: parseFloat(amount),
+                method,
+                phoneNumber,
+                transactionId,
+            });
+            toast({ title: "Request Updated", description: "Your deposit request has been successfully updated." });
+            setUpdateDialogOpen(false);
+            setSelectedRequest(null);
+        } catch (error) {
+            console.error("Error updating request:", error);
+            toast({ variant: "destructive", title: "Update Failed", description: "Could not update the request." });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteRequest = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "deposits", id));
+            toast({ title: "Request Deleted", description: "Your deposit request has been cancelled." });
+        } catch (error) {
+            console.error("Error deleting request:", error);
+            toast({ variant: "destructive", title: "Delete Failed", description: "Could not delete the request." });
+        }
+    };
+
+    const openUpdateDialog = (request: DepositRequest) => {
+        setSelectedRequest(request);
+        setAmount(request.amount.toString());
+        setMethod(request.method);
+        setPhoneNumber(request.phoneNumber);
+        setTransactionId(request.transactionId);
+        setUpdateDialogOpen(true);
+    };
+
+    useEffect(() => {
+        setMethod(currentTab as "bkash" | "nagad");
+    }, [currentTab]);
+
+
+    const renderForm = (formMethod: "bkash" | "nagad") => (
+        <>
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm">
+                <p>Please complete your {formMethod} payment to agent number:</p>
+                <p className="font-bold text-lg my-1">01XXXXXXXXX</p>
+                <p>Then, fill out the form below.</p>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                    <Label htmlFor={`${formMethod}-amount`}>Amount (USD)</Label>
+                    <Input id={`${formMethod}-amount`} placeholder="e.g. 10" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required min="1" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor={`${formMethod}-phone`}>Your {formMethod} Phone Number</Label>
+                    <Input id={`${formMethod}-phone`} placeholder="e.g. 01XXXXXXXXX" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor={`${formMethod}-trx`}>{formMethod} Transaction ID (TrxID)</Label>
+                    <Input id={`${formMethod}-trx`} placeholder="e.g. 8M7A9B2C1D" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} required />
+                </div>
+                <Button type="submit" className="w-full h-10" disabled={isLoading}>{isLoading ? "Submitting..." : "Submit Deposit Request"}</Button>
+            </form>
+        </>
+    );
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
        <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Deposit</h1>
+            <h1 className="text-xl font-bold">Deposit USD</h1>
        </div>
-       <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle>Token Price</CardTitle>
-          <CardDescription>Current market rate for Hasmi Coin.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-            <p className="text-xl font-bold text-center">1 HC = $0.009 USD</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-                {depositPackages.map((pkg) => (
-                    <div key={pkg.usd} className="p-2 text-center rounded-lg bg-muted/50">
-                        <p className="text-sm font-bold">${pkg.usd}</p>
-                        <p className="text-xs text-primary">{pkg.hc.toLocaleString()} HC</p>
-                    </div>
-                ))}
-            </div>
-        </CardContent>
-      </Card>
+      
+       {pendingDeposits.length > 0 && (
+            <Card className="rounded-2xl">
+                <CardHeader>
+                    <CardTitle>Pending Requests</CardTitle>
+                    <CardDescription>Manage your pending deposit requests.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {pendingDeposits.map(request => (
+                        <div key={request.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div>
+                                <p className="font-bold">${request.amount.toFixed(2)} <span className="text-sm font-normal text-muted-foreground capitalize">({request.method})</span></p>
+                                <p className="text-xs text-muted-foreground">TrxID: {request.transactionId}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openUpdateDialog(request)}>
+                                    <Edit className="size-4" />
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                            <Trash2 className="size-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will permanently delete your deposit request for ${request.amount.toFixed(2)}. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteRequest(request.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+        )}
 
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>Deposit Funds</CardTitle>
+          <CardTitle>Submit New Deposit</CardTitle>
           <CardDescription>
             Add funds to your wallet using bKash or Nagad.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="bkash" className="w-full">
+          <Tabs defaultValue="bkash" className="w-full" onValueChange={(value) => setCurrentTab(value)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="bkash">bKash</TabsTrigger>
               <TabsTrigger value="nagad">Nagad</TabsTrigger>
             </TabsList>
             <TabsContent value="bkash">
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm">
-                <p>Please complete your bKash payment to agent number:</p>
-                <p className="font-bold text-lg my-1">01XXXXXXXXX</p>
-                <p>Then, fill the form below.</p>
-              </div>
-              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bkash-amount">Amount (HC)</Label>
-                  <Input id="bkash-amount" placeholder="e.g. 500" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bkash-phone">Your bKash Phone Number</Label>
-                  <Input id="bkash-phone" placeholder="e.g. 01XXXXXXXXX" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bkash-trx">bKash Transaction ID (TrxID)</Label>
-                  <Input id="bkash-trx" placeholder="e.g. 8M7A9B2C1D" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} required />
-                </div>
-                <Button type="submit" className="w-full">Submit Deposit Request</Button>
-              </form>
+              {renderForm("bkash")}
             </TabsContent>
             <TabsContent value="nagad">
-                <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm">
-                    <p>Please complete your Nagad payment to agent number:</p>
-                    <p className="font-bold text-lg my-1">01XXXXXXXXX</p>
-                    <p>Then, fill the form below.</p>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="nagad-amount">Amount (HC)</Label>
-                        <Input id="nagad-amount" placeholder="e.g. 500" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="nagad-phone">Your Nagad Phone Number</Label>
-                        <Input id="nagad-phone" placeholder="e.g. 01XXXXXXXXX" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="nagad-trx">Nagad Transaction ID (TrxID)</Label>
-                        <Input id="nagad-trx" placeholder="e.g. 8M7A9B2C1D" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} required />
-                    </div>
-                    <Button type="submit" className="w-full">Submit Deposit Request</Button>
-                </form>
+              {renderForm("nagad")}
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+      
+      {/* Dialog for Updating Request */}
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Update Deposit Request</DialogTitle>
+                  <DialogDescription>Modify the details of your pending request.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleUpdateRequest} className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                      <Label htmlFor="update-method">Method</Label>
+                       <Select onValueChange={(value) => setMethod(value as "bkash" | "nagad")} value={method}>
+                          <SelectTrigger id="update-method">
+                              <SelectValue placeholder="Select a method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="bkash">bKash</SelectItem>
+                              <SelectItem value="nagad">Nagad</SelectItem>
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="update-amount">Amount (USD)</Label>
+                      <Input id="update-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required min="1"/>
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="update-phone">Phone Number</Label>
+                      <Input id="update-phone" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
+                  </div>
+                   <div className="space-y-2">
+                      <Label htmlFor="update-trx">Transaction ID (TrxID)</Label>
+                      <Input id="update-trx" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} required />
+                  </div>
+                  <DialogFooter>
+                      <Button type="button" variant="ghost" onClick={() => setUpdateDialogOpen(false)}>Cancel</Button>
+                      <Button type="submit" disabled={isLoading}>
+                          {isLoading ? "Saving..." : "Save Changes"}
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
     </div>
   );
 }

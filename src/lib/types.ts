@@ -1,4 +1,5 @@
 
+
 export type Transaction = {
   id: string;
   type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward';
@@ -47,6 +48,17 @@ export type MarketListing = {
   status: 'open' | 'sold' | 'pending';
 }
 
+export type DepositRequest = {
+  id: string;
+  userId: string;
+  amount: number; // USD amount
+  method: 'bkash' | 'nagad';
+  phoneNumber: string;
+  transactionId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: any;
+};
+
 export type WithdrawalRequest = {
   id: string;
   userId: string;
@@ -64,3 +76,4 @@ export type Message = {
     timestamp: any;
     isRead: boolean;
 }
+
