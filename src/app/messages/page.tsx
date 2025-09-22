@@ -131,7 +131,7 @@ export default function MessagesPage() {
 
 
     return (
-        <div className="relative h-screen bg-background">
+        <div className="bg-background">
              <header className="fixed top-0 left-0 right-0 flex items-center gap-2 p-4 border-b z-10 bg-background h-16">
                 <Button variant="ghost" size="icon" className="w-9 h-9" asChild>
                     <Link href="/profile">
