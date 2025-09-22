@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDoc, DocumentData } from "firebase/firestore";
 import type { Message } from "@/lib/types";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ export default function MessagesPage() {
     const [newMessage, setNewMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const [senders, setSenders] = useState<Record<string, DocumentData>>({});
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,14 +43,17 @@ export default function MessagesPage() {
         const unsubscribe = onSnapshot(q, async (snapshot) => {
             const msgs: Message[] = [];
             const unreadMessageIdsToUpdate: string[] = [];
+            const senderIdsToFetch = new Set<string>();
             
             snapshot.docs.forEach(docSnap => {
                 const msg = { id: docSnap.id, ...docSnap.data() } as Message;
                 msgs.push(msg);
 
-                // Assuming 'admin' senderId is not the user's uid
-                if (msg.senderId !== user.uid && !msg.isRead) {
-                    unreadMessageIdsToUpdate.push(docSnap.id);
+                if (msg.senderId !== user.uid) {
+                    senderIdsToFetch.add(msg.senderId);
+                    if (!msg.isRead) {
+                        unreadMessageIdsToUpdate.push(docSnap.id);
+                    }
                 }
             });
 
@@ -61,6 +65,18 @@ export default function MessagesPage() {
             
             setMessages(msgs);
 
+            // Fetch sender data if we have new senders
+            senderIdsToFetch.forEach(async (senderId) => {
+                if (!senders[senderId]) {
+                    const userDocRef = doc(db, 'users', senderId);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists()) {
+                        setSenders(prev => ({ ...prev, [senderId]: userDocSnap.data() }));
+                    }
+                }
+            });
+
+            // Mark messages as read
             for (const messageId of unreadMessageIdsToUpdate) {
                 const docRef = doc(db, "messages", messageId);
                 await updateDoc(docRef, { isRead: true });
@@ -68,7 +84,7 @@ export default function MessagesPage() {
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, senders]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,10 +109,15 @@ export default function MessagesPage() {
     
     const UserAvatar = ({ senderId }: { senderId: string }) => {
         const isUser = senderId === user?.uid;
+        const sender = senders[senderId];
+        const initial = isUser 
+            ? user?.displayName?.charAt(0).toUpperCase() 
+            : sender?.displayName?.charAt(0).toUpperCase() || 'A';
+
         return (
             <Avatar className="w-8 h-8">
                 <AvatarFallback className={cn(isUser ? "bg-primary text-primary-foreground" : "bg-muted-foreground text-background")}>
-                    {isUser ? user?.displayName?.charAt(0).toUpperCase() : "A"}
+                    {initial}
                 </AvatarFallback>
             </Avatar>
         );
@@ -111,13 +132,14 @@ export default function MessagesPage() {
                         <ChevronLeft />
                     </Link>
                 </Button>
-                <h1 className="text-lg font-bold">Admin Support</h1>
+                <h1 className="text-lg font-bold">Support Chat</h1>
             </header>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.map(msg => {
                     if (!user) return null;
                     const isUser = msg.senderId === user.uid;
-                    const senderName = isUser ? "You" : "Admin";
+                    const sender = senders[msg.senderId];
+                    const senderName = isUser ? "You" : sender?.displayName || "Admin";
                     const timestamp = msg.timestamp?.toDate ? format(msg.timestamp.toDate(), 'HH:mm') : '';
 
                     return (
