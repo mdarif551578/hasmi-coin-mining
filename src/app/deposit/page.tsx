@@ -322,5 +322,4 @@ export default function DepositPage() {
       </Dialog>
     </div>
   );
-
-    
+}
