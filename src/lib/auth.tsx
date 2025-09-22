@@ -44,41 +44,49 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
+    let referredBy = null;
+    let hasProcessedReferral = false;
+
+    // --- Referral Logic ---
+    // This block should run if a referral code is provided, even if the user document exists,
+    // as long as the user hasn't been referred before.
+    if (referralCode && !userDocSnap.data()?.referred_by) {
+        const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const referringUserDoc = querySnapshot.docs[0];
+            referredBy = referringUserDoc.id;
+            hasProcessedReferral = true; // Mark that we found a valid referrer
+
+            // Create pending referral bonus document
+            try {
+                const settingsDocRef = doc(db, 'settings', 'exchangeRates');
+                const settingsDoc = await getDoc(settingsDocRef);
+                if (settingsDoc.exists()) {
+                    const settingsData = settingsDoc.data();
+                    const bonusConfig = settingsData.referral_bonus;
+                    if (bonusConfig && bonusConfig.referrer_bonus > 0 && bonusConfig.referee_bonus > 0) {
+                        await addDoc(collection(db, "referral_bonuses"), {
+                            referrerId: referredBy,
+                            refereeId: user.uid,
+                            referrerBonus: bonusConfig.referrer_bonus,
+                            refereeBonus: bonusConfig.referee_bonus,
+                            status: 'pending',
+                            createdAt: serverTimestamp(),
+                        });
+                    }
+                }
+            } catch (bonusError) {
+                console.error("Error creating referral bonus document:", bonusError);
+            }
+        }
+    }
+
+
+    // --- User Document Creation/Update ---
     if (!userDocSnap.exists()) {
         const { email, displayName, uid } = user;
         const newReferralCode = await generateReferralCode(uid);
-        let referredBy = null;
-
-        if (referralCode) {
-            const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const referringUserDoc = querySnapshot.docs[0];
-                referredBy = referringUserDoc.id;
-
-                // Create pending referral bonus
-                try {
-                    const settingsDocRef = doc(db, 'settings', 'exchangeRates');
-                    const settingsDoc = await getDoc(settingsDocRef);
-                    if (settingsDoc.exists()) {
-                        const settingsData = settingsDoc.data();
-                        const bonusConfig = settingsData.referral_bonus;
-                        if (bonusConfig && bonusConfig.referrer_bonus > 0 && bonusConfig.referee_bonus > 0) {
-                            await addDoc(collection(db, "referral_bonuses"), {
-                                referrerId: referredBy,
-                                refereeId: uid,
-                                referrerBonus: bonusConfig.referrer_bonus,
-                                refereeBonus: bonusConfig.referee_bonus,
-                                status: 'pending',
-                                createdAt: serverTimestamp(),
-                            });
-                        }
-                    }
-                } catch (bonusError) {
-                    console.error("Error creating referral bonus document:", bonusError);
-                }
-            }
-        }
         
         try {
             await setDoc(userDocRef, {
@@ -88,13 +96,21 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
                 wallet_balance: 0,
                 usd_balance: 0,
                 referral_code: newReferralCode,
-                referred_by: referredBy,
+                referred_by: referredBy, // Will be null if no valid code was used
                 role: 'user',
                 last_claim: new Date(0),
                 createdAt: serverTimestamp(),
             });
         } catch (error) {
             console.error("Error creating user document:", error);
+        }
+    } else if (hasProcessedReferral) {
+        // If the user document already exists but we just processed a referral,
+        // update the `referred_by` field.
+         try {
+            await setDoc(userDocRef, { referred_by: referredBy }, { merge: true });
+        } catch (error) {
+            console.error("Error updating referred_by field:", error);
         }
     }
 };
