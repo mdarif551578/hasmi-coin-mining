@@ -13,7 +13,7 @@ import {
   sendEmailVerification,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -39,50 +39,11 @@ const generateReferralCode = async (uid: string) => {
 };
 
 
-export const createUserDocument = async (user: User, referralCode?: string) => {
+export const createUserDocument = async (user: User, referredBy: string | null = null) => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
-    let referredBy = null;
-
-    // --- Referral Logic: Process this first, regardless of user doc existence ---
-    if (referralCode && !userDocSnap.data()?.referred_by) {
-        try {
-            const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                const referringUserDoc = querySnapshot.docs[0];
-                referredBy = referringUserDoc.id;
-
-                // Fetch bonus settings and create the pending bonus document
-                const settingsDocRef = doc(db, 'settings', 'exchangeRates');
-                const settingsDoc = await getDoc(settingsDocRef);
-
-                if (settingsDoc.exists()) {
-                    const settingsData = settingsDoc.data();
-                    const bonusConfig = settingsData.referral_bonus;
-                    if (bonusConfig && bonusConfig.referrer_bonus > 0 && bonusConfig.referee_bonus > 0) {
-                        // This is the crucial step to create the document
-                        await addDoc(collection(db, "referral_bonuses"), {
-                            referrerId: referredBy,
-                            refereeId: user.uid,
-                            referrerBonus: bonusConfig.referrer_bonus,
-                            refereeBonus: bonusConfig.referee_bonus,
-                            status: 'pending',
-                            createdAt: serverTimestamp(),
-                        });
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Error processing referral or creating bonus document:", error);
-        }
-    }
-
-
-    // --- User Document Creation/Update ---
     if (!userDocSnap.exists()) {
         const { email, displayName, uid } = user;
         const newReferralCode = await generateReferralCode(uid);
@@ -103,18 +64,10 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
         } catch (error) {
             console.error("Error creating user document:", error);
         }
-    } else if (referredBy && !userDocSnap.data()?.referred_by) {
-        // If the user document already exists but didn't have a referrer, update it.
-         try {
-            await setDoc(userDocRef, { referred_by: referredBy }, { merge: true });
-        } catch (error) {
-            console.error("Error updating referred_by field:", error);
-        }
     }
 };
 
-// We need a way to pass the referral code from signup to onAuthStateChanged.
-let tempReferralCode: string | undefined = undefined;
+let tempReferredBy: string | null = null;
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -124,8 +77,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         // This function checks for existence and creates if needed
-        createUserDocument(currentUser, tempReferralCode);
-        tempReferralCode = undefined; // Clear the code after use
+        createUserDocument(currentUser, tempReferredBy);
+        tempReferredBy = null; // Clear after use
       }
       setUser(currentUser);
       setLoading(false);
@@ -144,17 +97,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => useContext(AuthContext);
 
 export const signUp = async (name: string, email:string, password: string, referralCode?: string): Promise<{ error?: any }> => {
+  let userCredential;
   try {
-    // Store referral code to be picked up by onAuthStateChanged
-    tempReferralCode = referralCode; 
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, { displayName: name });
-    await sendEmailVerification(userCredential.user);
-    // createUserDocument is now called by onAuthStateChanged.
+    userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUser = userCredential.user;
+    await updateProfile(newUser, { displayName: name });
+
+    let referredBy: string | null = null;
+    
+    // --- START: Referral Logic inside signUp ---
+    if (referralCode) {
+      try {
+        const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const referringUserDoc = querySnapshot.docs[0];
+          referredBy = referringUserDoc.id;
+
+          const settingsDocRef = doc(db, 'settings', 'exchangeRates');
+          const settingsDoc = await getDoc(settingsDocRef);
+
+          if (settingsDoc.exists()) {
+            const settingsData = settingsDoc.data();
+            const bonusConfig = settingsData.referral_bonus;
+            if (bonusConfig?.referrer_bonus > 0 && bonusConfig?.referee_bonus > 0) {
+              await addDoc(collection(db, "referral_bonuses"), {
+                referrerId: referredBy,
+                refereeId: newUser.uid,
+                referrerBonus: bonusConfig.referrer_bonus,
+                refereeBonus: bonusConfig.referee_bonus,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error processing referral or creating bonus document:", error);
+      }
+    }
+    // --- END: Referral Logic ---
+    
+    // Pass the found referrer to be used by onAuthStateChanged listener
+    tempReferredBy = referredBy;
+
+    await sendEmailVerification(newUser);
     await firebaseSignOut(auth); // Sign out user until they verify email
     return {};
   } catch (error) {
-    tempReferralCode = undefined; // Clear on error
+    // If user creation fails, we don't need to do much cleanup,
+    // but clearing the temp var is good practice.
+    tempReferredBy = null;
+    
+    // If the user was created but something else failed, delete the user
+    // to allow them to try signing up again.
+    if (userCredential?.user) {
+        try {
+            await userCredential.user.delete();
+        } catch (deleteError) {
+            console.error("Failed to clean up partially created user:", deleteError);
+        }
+    }
     return { error };
   }
 };
@@ -177,3 +181,4 @@ export const resetPassword = async (email: string): Promise<{ error?: any }> => 
         return { error };
     }
 }
+
