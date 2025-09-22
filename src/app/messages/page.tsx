@@ -14,10 +14,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { format } from 'date-fns';
+import { useUserData } from "@/hooks/use-user-data";
 
 
 export default function MessagesPage() {
     const { user } = useAuth();
+    const { userData } = useUserData();
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +39,8 @@ export default function MessagesPage() {
 
         const q = query(
             collection(db, "messages"),
-            where("userId", "==", user.uid)
+            where("userId", "==", user.uid),
+            orderBy("timestamp", "asc")
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -56,12 +59,6 @@ export default function MessagesPage() {
                     }
                 }
             });
-
-            msgs.sort((a, b) => {
-                const aTimestamp = a.timestamp?.toMillis() || 0;
-                const bTimestamp = b.timestamp?.toMillis() || 0;
-                return aTimestamp - bTimestamp;
-            });
             
             setMessages(msgs);
 
@@ -72,6 +69,9 @@ export default function MessagesPage() {
                     const userDocSnap = await getDoc(userDocRef);
                     if (userDocSnap.exists()) {
                         setSenders(prev => ({ ...prev, [senderId]: userDocSnap.data() }));
+                    } else {
+                        // Fallback for admin or system messages not in users collection
+                         setSenders(prev => ({ ...prev, [senderId]: { displayName: "Admin" } }));
                     }
                 }
             });
@@ -113,7 +113,7 @@ export default function MessagesPage() {
         
         let initial = 'A'; // Default to 'A' for Admin
         if (isUser) {
-            initial = user?.displayName?.charAt(0).toUpperCase() || 'U';
+            initial = userData?.displayName?.charAt(0).toUpperCase() || 'U';
         } else if (sender) {
             initial = sender?.displayName?.charAt(0).toUpperCase() || 'A';
         }
@@ -177,3 +177,4 @@ export default function MessagesPage() {
         </div>
     );
 }
+

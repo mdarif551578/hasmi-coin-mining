@@ -54,7 +54,7 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserIcon className="size-5 text-primary" />
-            <span>{user?.displayName || "User"}</span>
+            <span>{loading ? <Skeleton className="w-24 h-5" /> : userData?.displayName || "User"}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
@@ -111,3 +111,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
