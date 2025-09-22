@@ -12,12 +12,14 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import type { DepositRequest } from "@/lib/types";
-import { Edit, Repeat, Trash2 } from "lucide-react";
+import { Edit, Repeat, Trash2, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSettings } from "@/hooks/use-settings";
 import { Skeleton } from "@/components/ui/skeleton";
+
+type DepositMethod = "bkash" | "nagad";
 
 export default function DepositPage() {
     const { toast } = useToast();
@@ -27,13 +29,12 @@ export default function DepositPage() {
     const [amount, setAmount] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [transactionId, setTransactionId] = useState("");
-    const [method, setMethod] = useState<"bkash" | "nagad" | "">("");
+    const [method, setMethod] = useState<DepositMethod>("bkash");
 
     const [pendingDeposits, setPendingDeposits] = useState<DepositRequest[]>([]);
     const [isUpdateDialogOpen, setUpdateDialogOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<DepositRequest | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [currentTab, setCurrentTab] = useState("bkash");
 
     useEffect(() => {
         if (!user) return;
@@ -54,7 +55,6 @@ export default function DepositPage() {
         setAmount("");
         setPhoneNumber("");
         setTransactionId("");
-        setMethod(currentTab as "bkash" | "nagad");
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -123,45 +123,62 @@ export default function DepositPage() {
     const openUpdateDialog = (request: DepositRequest) => {
         setSelectedRequest(request);
         setAmount(request.amount.toString());
-        setMethod(request.method);
+        setMethod(request.method as DepositMethod);
         setPhoneNumber(request.phoneNumber);
         setTransactionId(request.transactionId);
         setUpdateDialogOpen(true);
     };
 
     useEffect(() => {
-        setMethod(currentTab as "bkash" | "nagad");
         // Reset form fields when tab changes
         setAmount("");
         setPhoneNumber("");
         setTransactionId("");
-    }, [currentTab]);
+    }, [method]);
 
 
-    const renderForm = (formMethod: "bkash" | "nagad") => (
-        <>
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm">
-                <p>Please complete your {formMethod} payment to agent number:</p>
-                <p className="font-bold text-lg my-1">01XXXXXXXXX</p>
-                <p>Then, fill out the form below.</p>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                    <Label htmlFor={`${formMethod}-amount`}>Amount (USD)</Label>
-                    <Input id={`${formMethod}-amount`} placeholder="e.g. 10" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required min="1" />
+    const currentMethodSettings = settings?.deposit_methods?.[method];
+    const hcConversionRate = settings?.usd_to_hc || 0;
+    const usdAmountNumber = parseFloat(amount) || 0;
+    const bdtToReceive = usdAmountNumber * (currentMethodSettings?.rate || 0);
+
+    const renderForm = (formMethod: DepositMethod) => {
+        const methodSettings = settings?.deposit_methods?.[formMethod];
+        return (
+            <>
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm">
+                    {settingsLoading ? (
+                        <Skeleton className="h-10 w-full" />
+                    ) : (
+                        <>
+                            <p>Please complete your {formMethod} payment to agent number:</p>
+                            <p className="font-bold text-lg my-1">{methodSettings?.agent_number || "Not available"}</p>
+                            <p>Then, fill out the form below.</p>
+                        </>
+                    )}
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor={`${formMethod}-phone`}>Your {formMethod} Phone Number</Label>
-                    <Input id={`${formMethod}-phone`} placeholder="e.g. 01XXXXXXXXX" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor={`${formMethod}-trx`}>{formMethod} Transaction ID (TrxID)</Label>
-                    <Input id={`${formMethod}-trx`} placeholder="e.g. 8M7A9B2C1D" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} required />
-                </div>
-                <Button type="submit" className="w-full h-10" disabled={isLoading}>{isLoading ? "Submitting..." : "Submit Deposit Request"}</Button>
-            </form>
-        </>
-    );
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                        <Label htmlFor={`${formMethod}-amount`}>Amount (USD)</Label>
+                        <Input id={`${formMethod}-amount`} placeholder="e.g. 10" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required min="1" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor={`${formMethod}-phone`}>Your {formMethod} Phone Number</Label>
+                        <Input id={`${formMethod}-phone`} placeholder="e.g. 01XXXXXXXXX" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor={`${formMethod}-trx`}>{formMethod} Transaction ID (TrxID)</Label>
+                        <Input id={`${formMethod}-trx`} placeholder="e.g. 8M7A9B2C1D" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} required />
+                    </div>
+                     <div className="p-3 my-2 bg-muted/50 rounded-lg text-center text-sm">
+                        <p>You will send</p>
+                        <p className="font-bold text-lg text-primary">{bdtToReceive.toLocaleString()} {currentMethodSettings?.currency || ''}</p>
+                    </div>
+                    <Button type="submit" className="w-full h-10" disabled={isLoading}>{isLoading ? "Submitting..." : "Submit Deposit Request"}</Button>
+                </form>
+            </>
+        )
+    };
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
@@ -173,17 +190,32 @@ export default function DepositPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Repeat className="size-5 text-primary" />
-                    <span>Live Exchange Rate</span>
+                    <span>Live Exchange Rates</span>
                 </CardTitle>
                  <CardDescription>
-                    The current rate for converting USD to Hasmi Coin (HC).
+                    The current rates for deposits and conversion to Hasmi Coin (HC).
                 </CardDescription>
             </CardHeader>
             <CardContent>
                  {settingsLoading ? (
-                    <Skeleton className="h-8 w-48" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-8 w-40" />
+                    </div>
                  ) : (
-                    <p className="text-xl font-bold">1 USD = {(settings?.usd_to_hc || 0).toLocaleString()} HC</p>
+                    <div className="space-y-3 text-lg font-bold">
+                        <div className="flex items-center gap-2">
+                           <span>1 USD</span>
+                           <ArrowRight className="size-4 text-muted-foreground"/>
+                           <span>{currentMethodSettings?.rate || 0} {currentMethodSettings?.currency || ''}</span> 
+                           <span className="text-sm font-normal text-muted-foreground capitalize">({method})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <span>1 USD</span>
+                           <ArrowRight className="size-4 text-muted-foreground"/>
+                           <span>{hcConversionRate.toLocaleString()} HC</span>
+                        </div>
+                    </div>
                  )}
             </CardContent>
         </Card>
@@ -239,7 +271,7 @@ export default function DepositPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="bkash" className="w-full" onValueChange={(value) => setCurrentTab(value)}>
+          <Tabs defaultValue="bkash" className="w-full" onValueChange={(value) => setMethod(value as DepositMethod)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="bkash">bKash</TabsTrigger>
               <TabsTrigger value="nagad">Nagad</TabsTrigger>
@@ -264,7 +296,7 @@ export default function DepositPage() {
               <form onSubmit={handleUpdateRequest} className="space-y-4 pt-4">
                   <div className="space-y-2">
                       <Label htmlFor="update-method">Method</Label>
-                       <Select onValueChange={(value) => setMethod(value as "bkash" | "nagad")} value={method}>
+                       <Select onValueChange={(value) => setMethod(value as DepositMethod)} value={method}>
                           <SelectTrigger id="update-method">
                               <SelectValue placeholder="Select a method" />
                           </SelectTrigger>
@@ -298,3 +330,5 @@ export default function DepositPage() {
     </div>
   );
 }
+
+    
