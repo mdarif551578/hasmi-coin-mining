@@ -12,14 +12,17 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import type { DepositRequest } from "@/lib/types";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Repeat, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSettings } from "@/hooks/use-settings";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DepositPage() {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { settings, loading: settingsLoading } = useSettings();
     
     const [amount, setAmount] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
@@ -128,6 +131,10 @@ export default function DepositPage() {
 
     useEffect(() => {
         setMethod(currentTab as "bkash" | "nagad");
+        // Reset form fields when tab changes
+        setAmount("");
+        setPhoneNumber("");
+        setTransactionId("");
     }, [currentTab]);
 
 
@@ -161,6 +168,25 @@ export default function DepositPage() {
        <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold">Deposit USD</h1>
        </div>
+
+        <Card className="rounded-2xl">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Repeat className="size-5 text-primary" />
+                    <span>Live Exchange Rate</span>
+                </CardTitle>
+                 <CardDescription>
+                    The current rate for converting USD to Hasmi Coin (HC).
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                 {settingsLoading ? (
+                    <Skeleton className="h-8 w-48" />
+                 ) : (
+                    <p className="text-xl font-bold">1 USD = {(settings?.usd_to_hc || 0).toLocaleString()} HC</p>
+                 )}
+            </CardContent>
+        </Card>
       
        {pendingDeposits.length > 0 && (
             <Card className="rounded-2xl">
