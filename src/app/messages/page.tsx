@@ -132,7 +132,7 @@ export default function MessagesPage() {
 
     return (
         <div className="flex flex-col h-screen bg-background">
-             <header className="flex-shrink-0 flex items-center gap-2 p-4 border-b">
+             <header className="flex-shrink-0 flex items-center gap-2 p-4 border-b z-10 bg-background">
                 <Button variant="ghost" size="icon" className="w-9 h-9" asChild>
                     <Link href="/profile">
                         <ChevronLeft />
@@ -163,7 +163,7 @@ export default function MessagesPage() {
                 )})}
                  <div ref={messagesEndRef} />
             </main>
-            <footer className="flex-shrink-0 p-4 border-t bg-background">
+            <footer className="flex-shrink-0 p-4 border-t bg-background z-10">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                     <Input
                         value={newMessage}
