@@ -72,7 +72,7 @@ export function BottomNavBar() {
             )}
           >
             {item.label === 'Profile' && hasUnread && (
-              <span className="absolute top-2.5 right-4 w-2 h-2 rounded-full bg-primary" />
+              <span className="absolute top-2.5 right-4 w-2 h-2 rounded-full bg-destructive" />
             )}
             <item.icon className="w-5 h-5 mb-1" />
             <span className="text-xs text-center">{item.label}</span>
