@@ -138,7 +138,6 @@ export default function DepositPage() {
 
 
     const currentMethodSettings = settings?.deposit_methods?.[method];
-    const hcConversionRate = settings?.usd_to_hc || 0;
     const usdAmountNumber = parseFloat(amount) || 0;
     const bdtToReceive = usdAmountNumber * (currentMethodSettings?.rate || 0);
 
@@ -190,17 +189,16 @@ export default function DepositPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Repeat className="size-5 text-primary" />
-                    <span>Live Exchange Rates</span>
+                    <span>Live Exchange Rate</span>
                 </CardTitle>
                  <CardDescription>
-                    The current rates for deposits and conversion to Hasmi Coin (HC).
+                    The current rate for deposits.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                  {settingsLoading ? (
                     <div className="space-y-2">
                         <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-8 w-40" />
                     </div>
                  ) : (
                     <div className="space-y-3 text-lg font-bold">
@@ -209,11 +207,6 @@ export default function DepositPage() {
                            <ArrowRight className="size-4 text-muted-foreground"/>
                            <span>{currentMethodSettings?.rate || 0} {currentMethodSettings?.currency || ''}</span> 
                            <span className="text-sm font-normal text-muted-foreground capitalize">({method})</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <span>1 USD</span>
-                           <ArrowRight className="size-4 text-muted-foreground"/>
-                           <span>{hcConversionRate.toLocaleString()} HC</span>
                         </div>
                     </div>
                  )}
@@ -267,7 +260,7 @@ export default function DepositPage() {
         <CardHeader>
           <CardTitle>Submit New Deposit</CardTitle>
           <CardDescription>
-            Add funds to your wallet using bKash or Nagad.
+            Add funds to your wallet using one of the available methods.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -329,6 +322,5 @@ export default function DepositPage() {
       </Dialog>
     </div>
   );
-}
 
     
