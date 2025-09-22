@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import type { Message } from "@/lib/types";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,13 +39,24 @@ export default function MessagesPage() {
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const msgs: Message[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-            setMessages(msgs);
+            const msgs: Message[] = [];
+            const unreadMessageIdsToUpdate: string[] = [];
             
-            // Mark messages from admin as read
-            const unreadMessages = snapshot.docs.filter(doc => doc.data().senderId === 'admin' && !doc.data().isRead);
-            for (const docSnap of unreadMessages) {
-                const docRef = doc(db, "messages", docSnap.id);
+            snapshot.docs.forEach(docSnap => {
+                const msg = { id: docSnap.id, ...docSnap.data() } as Message;
+                msgs.push(msg);
+
+                // Identify unread messages from admin
+                if (msg.senderId === 'admin' && !msg.isRead) {
+                    unreadMessageIdsToUpdate.push(docSnap.id);
+                }
+            });
+
+            setMessages(msgs);
+
+            // Mark identified messages as read in a batch
+            for (const messageId of unreadMessageIdsToUpdate) {
+                const docRef = doc(db, "messages", messageId);
                 await updateDoc(docRef, { isRead: true });
             }
         });
