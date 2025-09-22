@@ -9,8 +9,11 @@ import type { Transaction } from '@/lib/types';
 import { format } from 'date-fns';
 
 function formatTimestamp(timestamp: any): string {
-    if (!timestamp) return 'N/A';
-    return format(timestamp.toDate(), 'yyyy-MM-dd');
+    if (!timestamp) return new Date().toISOString();
+    if (typeof timestamp.toDate === 'function') {
+        return timestamp.toDate().toISOString();
+    }
+    return new Date(timestamp).toISOString();
 }
 
 export function useTransactions() {
@@ -34,46 +37,45 @@ export function useTransactions() {
       referral_bonuses_referrer: { type: 'referral', amountField: 'referrerBonus', currency: 'HC', userIdField: 'referrerId' },
       referral_bonuses_referee: { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' },
     };
+    
+    // Store all transactions in a single map to avoid duplicates and handle updates
+    const allTransactions = new Map<string, Transaction>();
 
     const unsubscribes = Object.entries(collectionsToQuery).map(([collectionName, config]) => {
-      const collName = collectionName.split('_')[0]; // 'referral_bonuses' for both
+      const collName = collectionName.startsWith('referral_bonuses') ? 'referral_bonuses' : collectionName;
       const userIdField = config.userIdField || 'userId';
 
+      // Query without server-side ordering to avoid composite index requirement
       const q = query(
         collection(db, collName),
-        where(userIdField, '==', user.uid),
-        orderBy('createdAt', 'desc')
+        where(userIdField, '==', user.uid)
       );
 
       return onSnapshot(q, (snapshot) => {
-        const fetchedTransactions = snapshot.docs.map(doc => {
+        snapshot.docs.forEach(doc => {
           const data = doc.data();
-          return {
-            id: doc.id,
-            type: config.type,
+          const transaction: Transaction = {
+            id: `${config.type}-${doc.id}`, // Create a unique ID for each transaction type
+            type: config.type as Transaction['type'],
             amount: data[config.amountField],
             status: data.status,
             date: formatTimestamp(data.createdAt),
-            currency: config.currency,
-          } as Transaction;
+            currency: config.currency as Transaction['currency'],
+          };
+          allTransactions.set(transaction.id, transaction);
         });
+
+        const sortedTransactions = Array.from(allTransactions.values())
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
-        setTransactions(prev => {
-            // Filter out old transactions from this source
-            const otherTransactions = prev.filter(t => t.type !== config.type);
-            // Combine with new ones
-            const all = [...otherTransactions, ...fetchedTransactions];
-            // Sort all transactions by date
-            all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            return all;
-        });
+        setTransactions(sortedTransactions);
 
       }, (error) => {
         console.error(`Error fetching ${collectionName}:`, error);
       });
     });
 
-    const initialLoadTimer = setTimeout(() => setLoading(false), 2000); // Give time for queries to run
+    const initialLoadTimer = setTimeout(() => setLoading(false), 2500); // Give time for queries to run
 
     return () => {
         unsubscribes.forEach(unsub => unsub());
