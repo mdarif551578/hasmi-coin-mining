@@ -4,8 +4,9 @@ export type Transaction = {
   id: string;
   type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward' | 'exchange';
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'completed' | 'failed' | 'approved' | 'rejected';
   date: string;
+  currency?: 'USD' | 'HC';
 };
 
 export type MiningPlan = {
@@ -96,5 +97,3 @@ export type ReferralBonus = {
     status: 'pending' | 'approved' | 'rejected';
     createdAt: any;
 }
-
-    
