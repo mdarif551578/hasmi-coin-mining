@@ -11,16 +11,19 @@ import { Repeat, Store } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useUserData } from "@/hooks/use-user-data";
+import { useSettings } from "@/hooks/use-settings";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const USD_TO_HC_RATE = 110; // 1 USD = 110 HC
 
 export default function ExchangePage() {
     const { toast } = useToast();
     const [usdAmount, setUsdAmount] = useState("");
-    const { userData, loading } = useUserData();
+    const { userData, loading: userLoading } = useUserData();
+    const { settings, loading: settingsLoading } = useSettings();
 
-    const hcToReceive = usdAmount ? (parseFloat(usdAmount) * USD_TO_HC_RATE).toLocaleString() : "0";
+    const isLoading = userLoading || settingsLoading;
+    const usdToHcRate = settings?.usd_to_hc || 0;
+
+    const hcToReceive = usdAmount ? (parseFloat(usdAmount) * usdToHcRate).toLocaleString() : "0";
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,6 +39,7 @@ export default function ExchangePage() {
             return;
         }
 
+        // TODO: Implement actual exchange logic here (update user balances in Firestore)
         toast({
             title: "Exchange Successful",
             description: `You have exchanged $${usdAmount} for ${hcToReceive} HC.`,
@@ -64,7 +68,7 @@ export default function ExchangePage() {
         </CardHeader>
         <CardContent className="space-y-4">
              <div>
-                 {loading ? (
+                 {isLoading ? (
                     <Skeleton className="h-8 w-32 mb-1" />
                 ) : (
                     <div className="text-2xl font-bold">${usdBalance.toFixed(2)} <span className="text-lg font-normal text-muted-foreground">USD</span></div>
@@ -73,7 +77,7 @@ export default function ExchangePage() {
             </div>
             <Separator />
             <div>
-                 {loading ? (
+                 {isLoading ? (
                     <Skeleton className="h-8 w-40 mb-1" />
                 ) : (
                     <div className="text-2xl font-bold">{hcBalance.toLocaleString()} <span className="text-lg font-normal text-muted-foreground">HC</span></div>
@@ -93,7 +97,11 @@ export default function ExchangePage() {
         <CardContent>
             <div className="p-3 my-4 bg-muted/50 rounded-lg text-center">
                 <p className="text-sm">Exchange Rate</p>
-                <p className="font-bold text-lg">1 USD = {USD_TO_HC_RATE} HC</p>
+                {isLoading ? (
+                    <Skeleton className="h-7 w-32 mx-auto" />
+                ) : (
+                     <p className="font-bold text-lg">1 USD = {usdToHcRate} HC</p>
+                )}
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -106,7 +114,7 @@ export default function ExchangePage() {
                     onChange={(e) => setUsdAmount(e.target.value)} 
                     required 
                     min="1"
-                    disabled={loading || !userData}
+                    disabled={isLoading || !userData}
                 />
             </div>
 
@@ -115,7 +123,7 @@ export default function ExchangePage() {
                 <p className="font-bold text-xl text-primary">{hcToReceive} HC</p>
             </div>
 
-            <Button type="submit" className="w-full h-10" disabled={loading || !userData || !usdAmount}>
+            <Button type="submit" className="w-full h-10" disabled={isLoading || !userData || !usdAmount}>
                 <Repeat className="mr-2"/>
                 Confirm Exchange
             </Button>
