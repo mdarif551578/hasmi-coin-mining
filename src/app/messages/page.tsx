@@ -39,7 +39,7 @@ export default function MessagesPage() {
 
         const q = query(
             collection(db, "messages"),
-            where("userId", "==", user.uid)
+            where("userId", "==", user.uid),
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -131,8 +131,8 @@ export default function MessagesPage() {
 
 
     return (
-        <div className="flex flex-col h-screen">
-             <header className="flex items-center gap-2 p-4 border-b">
+        <div className="flex flex-col h-screen bg-background">
+             <header className="flex-shrink-0 flex items-center gap-2 p-4 border-b">
                 <Button variant="ghost" size="icon" className="w-9 h-9" asChild>
                     <Link href="/profile">
                         <ChevronLeft />
@@ -140,7 +140,7 @@ export default function MessagesPage() {
                 </Button>
                 <h1 className="text-lg font-bold">Support Chat</h1>
             </header>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            <main className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.map(msg => {
                     if (!user) return null;
                     const isUser = msg.senderId === user.uid;
@@ -162,8 +162,8 @@ export default function MessagesPage() {
                     </div>
                 )})}
                  <div ref={messagesEndRef} />
-            </div>
-            <div className="p-4 border-t bg-background">
+            </main>
+            <footer className="flex-shrink-0 p-4 border-t bg-background">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                     <Input
                         value={newMessage}
@@ -175,7 +175,7 @@ export default function MessagesPage() {
                         <Send />
                     </Button>
                 </form>
-            </div>
+            </footer>
         </div>
     );
 }
