@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { format } from 'date-fns';
+
 
 export default function MessagesPage() {
     const { user } = useAuth();
@@ -35,7 +37,6 @@ export default function MessagesPage() {
         const q = query(
             collection(db, "messages"),
             where("userId", "==", user.uid)
-            // orderBy("timestamp", "asc") removed to prevent index error
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -46,13 +47,11 @@ export default function MessagesPage() {
                 const msg = { id: docSnap.id, ...docSnap.data() } as Message;
                 msgs.push(msg);
 
-                // Identify unread messages from admin
                 if (msg.senderId === 'admin' && !msg.isRead) {
                     unreadMessageIdsToUpdate.push(docSnap.id);
                 }
             });
 
-            // Sort messages on the client side
             msgs.sort((a, b) => {
                 const aTimestamp = a.timestamp?.toMillis() || 0;
                 const bTimestamp = b.timestamp?.toMillis() || 0;
@@ -61,7 +60,6 @@ export default function MessagesPage() {
             
             setMessages(msgs);
 
-            // Mark identified messages as read in a batch
             for (const messageId of unreadMessageIdsToUpdate) {
                 const docRef = doc(db, "messages", messageId);
                 await updateDoc(docRef, { isRead: true });
@@ -114,16 +112,25 @@ export default function MessagesPage() {
                 </Button>
                 <h1 className="text-lg font-bold">Admin Support</h1>
             </header>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map(msg => (
-                    <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.uid ? "justify-end" : "justify-start")}>
-                        {msg.senderId !== user?.uid && <UserAvatar senderId={msg.senderId} />}
-                        <div className={cn("max-w-[75%] p-3 rounded-2xl", msg.senderId === user?.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none")}>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {messages.map(msg => {
+                    const isUser = msg.senderId === user?.uid;
+                    const senderName = isUser ? "You" : "Admin";
+                    const timestamp = msg.timestamp?.toDate ? format(msg.timestamp.toDate(), 'HH:mm') : '';
+
+                    return (
+                    <div key={msg.id} className={cn("flex items-end gap-2", isUser ? "justify-end" : "justify-start")}>
+                        {!isUser && <UserAvatar senderId={msg.senderId} />}
+                        <div className={cn("max-w-[75%] p-3 rounded-2xl group", isUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none")}>
                             <p className="text-sm">{msg.text}</p>
+                             <div className="text-xs mt-1.5 flex justify-end gap-2 opacity-80">
+                                <span>{senderName}</span>
+                                <span>{timestamp}</span>
+                            </div>
                         </div>
-                        {msg.senderId === user?.uid && <UserAvatar senderId={msg.senderId} />}
+                        {isUser && <UserAvatar senderId={msg.senderId} />}
                     </div>
-                ))}
+                )})}
                  <div ref={messagesEndRef} />
             </div>
             <div className="p-4 border-t bg-background">
