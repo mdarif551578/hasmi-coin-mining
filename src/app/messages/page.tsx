@@ -39,8 +39,7 @@ export default function MessagesPage() {
 
         const q = query(
             collection(db, "messages"),
-            where("userId", "==", user.uid),
-            orderBy("timestamp")
+            where("userId", "==", user.uid)
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -60,6 +59,12 @@ export default function MessagesPage() {
                 }
             });
             
+            // Sort messages by timestamp client-side
+            msgs.sort((a, b) => {
+                if (!a.timestamp || !b.timestamp) return 0;
+                return a.timestamp.toMillis() - b.timestamp.toMillis();
+            });
+
             setMessages(msgs);
 
             // Fetch sender data if we have new senders
