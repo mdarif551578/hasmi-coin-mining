@@ -87,6 +87,14 @@ export type Message = {
     isRead: boolean;
 }
 
-
+export type ReferralBonus = {
+    id?: string;
+    referrerId: string;
+    refereeId: string;
+    referrerBonus: number;
+    refereeBonus: number;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: any;
+}
 
     

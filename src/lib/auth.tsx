@@ -11,10 +11,9 @@ import {
   updateProfile,
   User,
   sendEmailVerification,
-  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -56,6 +55,28 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
             if (!querySnapshot.empty) {
                 const referringUserDoc = querySnapshot.docs[0];
                 referredBy = referringUserDoc.id;
+
+                // Create pending referral bonus
+                try {
+                    const settingsDocRef = doc(db, 'settings', 'exchangeRates');
+                    const settingsDoc = await getDoc(settingsDocRef);
+                    if (settingsDoc.exists()) {
+                        const settingsData = settingsDoc.data();
+                        const bonusConfig = settingsData.referral_bonus;
+                        if (bonusConfig && bonusConfig.referrer_bonus > 0 && bonusConfig.referee_bonus > 0) {
+                            await addDoc(collection(db, "referral_bonuses"), {
+                                referrerId: referredBy,
+                                refereeId: uid,
+                                referrerBonus: bonusConfig.referrer_bonus,
+                                refereeBonus: bonusConfig.referee_bonus,
+                                status: 'pending',
+                                createdAt: serverTimestamp(),
+                            });
+                        }
+                    }
+                } catch (bonusError) {
+                    console.error("Error creating referral bonus document:", bonusError);
+                }
             }
         }
         
@@ -78,14 +99,7 @@ export const createUserDocument = async (user: User, referralCode?: string) => {
     }
 };
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-  initialReferralCode?: string;
-}
-
 // We need a way to pass the referral code from signup to onAuthStateChanged.
-// A simple global variable is not ideal for React, but for this specific,
-// one-time flow, it's the simplest solution without major state management refactoring.
 let tempReferralCode: string | undefined = undefined;
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
