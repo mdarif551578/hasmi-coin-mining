@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDoc, DocumentData } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDoc, DocumentData, orderBy } from "firebase/firestore";
 import type { Message } from "@/lib/types";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,7 @@ export default function MessagesPage() {
         const q = query(
             collection(db, "messages"),
             where("userId", "==", user.uid),
+            orderBy("timestamp")
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -58,9 +59,6 @@ export default function MessagesPage() {
                     }
                 }
             });
-            
-            // Sort messages by timestamp on the client side
-            msgs.sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
             
             setMessages(msgs);
 
@@ -83,6 +81,8 @@ export default function MessagesPage() {
                 const docRef = doc(db, "messages", messageId);
                 await updateDoc(docRef, { isRead: true });
             }
+        }, (error) => {
+             console.error("Firestore snapshot error:", error);
         });
 
         return () => unsubscribe();
@@ -131,7 +131,7 @@ export default function MessagesPage() {
 
 
     return (
-        <div className="flex flex-col h-screen bg-background">
+        <div className="flex flex-col h-[calc(100dvh)] bg-background">
              <header className="flex-shrink-0 flex items-center gap-2 p-4 border-b z-10 bg-background h-16">
                 <Button variant="ghost" size="icon" className="w-9 h-9" asChild>
                     <Link href="/profile">
@@ -140,7 +140,7 @@ export default function MessagesPage() {
                 </Button>
                 <h1 className="text-lg font-bold">Support Chat</h1>
             </header>
-            <main className="flex-1 overflow-y-auto p-4 space-y-2 pb-24">
+            <main className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map(msg => {
                     if (!user) return null;
                     const isUser = msg.senderId === user.uid;
@@ -151,8 +151,8 @@ export default function MessagesPage() {
                     return (
                     <div key={msg.id} className={cn("flex items-end gap-2", isUser ? "justify-end" : "justify-start")}>
                         {!isUser && <UserAvatar senderId={msg.senderId} />}
-                        <div className={cn("max-w-[75%] p-3 rounded-2xl group", isUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none")}>
-                            <p className="text-sm">{msg.text}</p>
+                        <div className={cn("max-w-[70%] p-3 rounded-2xl group", isUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none")}>
+                            <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                              <div className="text-xs mt-1.5 flex justify-end gap-2 opacity-80">
                                 <span>{senderName}</span>
                                 <span>{timestamp}</span>
