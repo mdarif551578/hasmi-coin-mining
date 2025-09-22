@@ -34,8 +34,8 @@ export default function MessagesPage() {
 
         const q = query(
             collection(db, "messages"),
-            where("userId", "==", user.uid),
-            orderBy("timestamp", "asc")
+            where("userId", "==", user.uid)
+            // orderBy("timestamp", "asc") removed to prevent index error
         );
 
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -52,6 +52,13 @@ export default function MessagesPage() {
                 }
             });
 
+            // Sort messages on the client side
+            msgs.sort((a, b) => {
+                const aTimestamp = a.timestamp?.toMillis() || 0;
+                const bTimestamp = b.timestamp?.toMillis() || 0;
+                return aTimestamp - bTimestamp;
+            });
+            
             setMessages(msgs);
 
             // Mark identified messages as read in a batch
