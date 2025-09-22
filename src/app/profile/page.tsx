@@ -3,17 +3,38 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield, User as UserIcon, Activity } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, Activity, MessageSquare } from "lucide-react";
 import { useAuth, signOut } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useUserData } from "@/hooks/use-user-data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { userData, loading } = useUserData();
   const router = useRouter();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(
+      collection(db, "messages"),
+      where("userId", "==", user.uid),
+      where("isRead", "==", false),
+      where("senderId", "==", "admin")
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadMessages(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
 
   const handleLogout = async () => {
     await signOut();
@@ -55,9 +76,16 @@ export default function ProfilePage() {
 
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>Settings</CardTitle>
+          <CardTitle>Menu</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
+            <Button variant="ghost" className="w-full justify-start gap-2 h-11" asChild>
+                <Link href="/messages">
+                    <MessageSquare />
+                    Messages
+                    {unreadMessages > 0 && <Badge className="ml-auto">{unreadMessages}</Badge>}
+                </Link>
+            </Button>
             <Button variant="ghost" className="w-full justify-start gap-2 h-11">
                 <UserIcon />
                 Account

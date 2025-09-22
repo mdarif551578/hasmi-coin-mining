@@ -56,3 +56,11 @@ export type WithdrawalRequest = {
   status: 'pending' | 'approved' | 'rejected';
   date: string;
 };
+
+export type Message = {
+    id: string;
+    text: string;
+    senderId: string; // 'admin' or user's UID
+    timestamp: any;
+    isRead: boolean;
+}

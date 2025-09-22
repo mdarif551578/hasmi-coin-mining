@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import { Repeat, CheckSquare, Store, User, Cog, Home as HomeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const navItems = [
   { href: "/dashboard", icon: HomeIcon, label: "Home" },
@@ -16,11 +19,28 @@ const navItems = [
 
 export function BottomNavBar() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [isClient, setIsClient] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      const q = query(
+        collection(db, "messages"), 
+        where("userId", "==", user.uid), 
+        where("isRead", "==", false),
+        where("senderId", "==", "admin")
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setHasUnread(!snapshot.empty);
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
 
   if (!isClient) {
     return (
@@ -41,13 +61,16 @@ export function BottomNavBar() {
             key={item.href}
             href={item.href}
             className={cn(
-              "inline-flex flex-col items-center justify-center px-1 hover:bg-accent/50 group transition-colors h-full",
+              "relative inline-flex flex-col items-center justify-center px-1 hover:bg-accent/50 group transition-colors h-full",
               "text-xs",
-               (item.href === '/dashboard' && isHomeActive) || (item.href !== '/dashboard' && pathname === item.href)
+               (item.href === '/dashboard' && isHomeActive) || (item.href !== '/dashboard' && (pathname === item.href || (item.href === "/profile" && pathname.startsWith("/messages"))))
                 ? "text-primary"
                 : "text-muted-foreground"
             )}
           >
+            {item.label === 'Profile' && hasUnread && (
+              <span className="absolute top-2.5 right-4 w-2 h-2 rounded-full bg-primary" />
+            )}
             <item.icon className="w-5 h-5 mb-1" />
             <span className="text-xs text-center">{item.label}</span>
           </Link>
