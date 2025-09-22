@@ -113,7 +113,7 @@ export default function MessagesPage() {
         const isUser = senderId === user?.uid;
         const sender = senders[senderId];
         
-        let initial = 'A'; // Default to 'A' for Admin
+        let initial = 'A';
         if (isUser) {
             initial = userData?.displayName?.charAt(0).toUpperCase() || 'U';
         } else if (sender) {
@@ -131,8 +131,8 @@ export default function MessagesPage() {
 
 
     return (
-        <div className="flex flex-col h-screen bg-background">
-             <header className="flex-shrink-0 flex items-center gap-2 p-4 border-b z-10 bg-background">
+        <div className="relative h-screen bg-background">
+             <header className="fixed top-0 left-0 right-0 flex items-center gap-2 p-4 border-b z-10 bg-background h-16">
                 <Button variant="ghost" size="icon" className="w-9 h-9" asChild>
                     <Link href="/profile">
                         <ChevronLeft />
@@ -140,7 +140,7 @@ export default function MessagesPage() {
                 </Button>
                 <h1 className="text-lg font-bold">Support Chat</h1>
             </header>
-            <main className="flex-1 overflow-y-auto p-4 space-y-2">
+            <main className="overflow-y-auto p-4 space-y-2 pt-20 pb-24">
                 {messages.map(msg => {
                     if (!user) return null;
                     const isUser = msg.senderId === user.uid;
@@ -163,7 +163,7 @@ export default function MessagesPage() {
                 )})}
                  <div ref={messagesEndRef} />
             </main>
-            <footer className="flex-shrink-0 p-4 border-t bg-background z-10">
+            <footer className="fixed bottom-0 left-0 right-0 p-4 border-t bg-background z-10">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                     <Input
                         value={newMessage}
