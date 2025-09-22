@@ -2,7 +2,7 @@
 
 export type Transaction = {
   id: string;
-  type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward';
+  type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward' | 'exchange';
   amount: number;
   status: 'pending' | 'completed' | 'failed';
   date: string;
@@ -69,6 +69,16 @@ export type WithdrawalRequest = {
   date: string;
 };
 
+export type ExchangeRequest = {
+    id: string;
+    userId: string;
+    usdAmount: number;
+    hcAmount: number;
+    rate: number;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: any;
+}
+
 export type Message = {
     id: string;
     text: string;
@@ -77,3 +87,6 @@ export type Message = {
     isRead: boolean;
 }
 
+
+
+    
