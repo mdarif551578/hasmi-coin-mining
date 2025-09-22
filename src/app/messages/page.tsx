@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import type { Message } from "@/lib/types";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,7 +47,8 @@ export default function MessagesPage() {
                 const msg = { id: docSnap.id, ...docSnap.data() } as Message;
                 msgs.push(msg);
 
-                if (msg.senderId === 'admin' && !msg.isRead) {
+                // Assuming 'admin' senderId is not the user's uid
+                if (msg.senderId !== user.uid && !msg.isRead) {
                     unreadMessageIdsToUpdate.push(docSnap.id);
                 }
             });
@@ -91,7 +92,7 @@ export default function MessagesPage() {
     };
     
     const UserAvatar = ({ senderId }: { senderId: string }) => {
-        const isUser = senderId !== 'admin';
+        const isUser = senderId === user?.uid;
         return (
             <Avatar className="w-8 h-8">
                 <AvatarFallback className={cn(isUser ? "bg-primary text-primary-foreground" : "bg-muted-foreground text-background")}>
@@ -114,7 +115,8 @@ export default function MessagesPage() {
             </header>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.map(msg => {
-                    const isUser = msg.senderId === user?.uid;
+                    if (!user) return null;
+                    const isUser = msg.senderId === user.uid;
                     const senderName = isUser ? "You" : "Admin";
                     const timestamp = msg.timestamp?.toDate ? format(msg.timestamp.toDate(), 'HH:mm') : '';
 

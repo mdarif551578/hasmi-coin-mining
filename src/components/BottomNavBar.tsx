@@ -38,7 +38,7 @@ export function BottomNavBar() {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const hasUnreadMessages = snapshot.docs
           .map(doc => doc.data() as Message)
-          .some(msg => !msg.isRead && msg.senderId === 'admin');
+          .some(msg => !msg.isRead && msg.senderId !== user.uid);
         setHasUnread(hasUnreadMessages);
       });
       return () => unsubscribe();

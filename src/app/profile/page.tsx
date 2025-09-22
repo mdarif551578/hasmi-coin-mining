@@ -32,7 +32,7 @@ export default function ProfilePage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const unreadCount = snapshot.docs
         .map(doc => doc.data() as Message)
-        .filter(msg => !msg.isRead && msg.senderId === 'admin')
+        .filter(msg => !msg.isRead && msg.senderId !== user.uid)
         .length;
       setUnreadMessages(unreadCount);
     });
