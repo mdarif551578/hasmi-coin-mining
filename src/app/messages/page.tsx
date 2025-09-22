@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDoc, DocumentData, orderBy } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDoc, DocumentData } from "firebase/firestore";
 import type { Message } from "@/lib/types";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -157,7 +157,7 @@ export default function MessagesPage() {
                     <div key={msg.id} className={cn("flex items-end gap-2", isUser ? "justify-end" : "justify-start")}>
                         {!isUser && <UserAvatar senderId={msg.senderId} />}
                         <div className={cn("max-w-[70%] p-3 rounded-2xl group", isUser ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none")}>
-                            <p className="text-sm whitespace-pre-wrap break-all">{msg.text}</p>
+                            <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
                              <div className="text-xs mt-1.5 flex justify-end gap-2 opacity-80">
                                 <span>{senderName}</span>
                                 <span>{timestamp}</span>
