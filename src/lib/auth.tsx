@@ -14,7 +14,7 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -40,14 +40,24 @@ const generateReferralCode = async (uid: string) => {
 };
 
 
-export const createUserDocument = async (user: User) => {
+export const createUserDocument = async (user: User, referralCode?: string) => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
         const { email, displayName, uid } = user;
-        const referralCode = await generateReferralCode(uid);
+        const newReferralCode = await generateReferralCode(uid);
+        let referredBy = null;
+
+        if (referralCode) {
+            const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const referringUserDoc = querySnapshot.docs[0];
+                referredBy = referringUserDoc.id;
+            }
+        }
         
         try {
             await setDoc(userDocRef, {
@@ -56,8 +66,8 @@ export const createUserDocument = async (user: User) => {
                 phone: '',
                 wallet_balance: 0,
                 usd_balance: 0,
-                referral_code: referralCode,
-                referred_by: null,
+                referral_code: newReferralCode,
+                referred_by: referredBy,
                 role: 'user',
                 last_claim: new Date(0),
                 createdAt: new Date(),
@@ -68,6 +78,16 @@ export const createUserDocument = async (user: User) => {
     }
 };
 
+interface AuthProviderProps {
+  children: React.ReactNode;
+  initialReferralCode?: string;
+}
+
+// We need a way to pass the referral code from signup to onAuthStateChanged.
+// A simple global variable is not ideal for React, but for this specific,
+// one-time flow, it's the simplest solution without major state management refactoring.
+let tempReferralCode: string | undefined = undefined;
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +96,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         // This function checks for existence and creates if needed
-        createUserDocument(currentUser);
+        createUserDocument(currentUser, tempReferralCode);
+        tempReferralCode = undefined; // Clear the code after use
       }
       setUser(currentUser);
       setLoading(false);
@@ -94,15 +115,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useAuth = () => useContext(AuthContext);
 
-export const signUp = async (name: string, email:string, password: string): Promise<{ error?: any }> => {
+export const signUp = async (name: string, email:string, password: string, referralCode?: string): Promise<{ error?: any }> => {
   try {
+    // Store referral code to be picked up by onAuthStateChanged
+    tempReferralCode = referralCode; 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName: name });
     await sendEmailVerification(userCredential.user);
-    // createUserDocument is now called by onAuthStateChanged, no need to call it here explicitly.
+    // createUserDocument is now called by onAuthStateChanged.
     await firebaseSignOut(auth); // Sign out user until they verify email
     return {};
   } catch (error) {
+    tempReferralCode = undefined; // Clear on error
     return { error };
   }
 };

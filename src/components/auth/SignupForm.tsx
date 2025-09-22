@@ -26,6 +26,7 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  referralCode: z.string().optional(),
 });
 
 export function SignupForm() {
@@ -42,15 +43,16 @@ export function SignupForm() {
       name: "",
       email: "",
       password: "",
+      referralCode: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    const { name, email, password } = values;
+    const { name, email, password, referralCode } = values;
     setUserEmail(email);
 
-    const { error } = await signUp(name, email, password);
+    const { error } = await signUp(name, email, password, referralCode);
 
     if (error) {
         const firebaseError = error as any;
@@ -156,6 +158,19 @@ export function SignupForm() {
                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </Button>
                     </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="referralCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Referral Code (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="HASMI-XXXXXXX" {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
