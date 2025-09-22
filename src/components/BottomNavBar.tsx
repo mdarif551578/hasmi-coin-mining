@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -8,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import type { Message } from "@/lib/types";
 
 const navItems = [
   { href: "/dashboard", icon: HomeIcon, label: "Home" },
@@ -31,12 +33,13 @@ export function BottomNavBar() {
     if (user) {
       const q = query(
         collection(db, "messages"), 
-        where("userId", "==", user.uid), 
-        where("isRead", "==", false),
-        where("senderId", "==", "admin")
+        where("userId", "==", user.uid)
       );
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        setHasUnread(!snapshot.empty);
+        const hasUnreadMessages = snapshot.docs
+          .map(doc => doc.data() as Message)
+          .some(msg => !msg.isRead && msg.senderId === 'admin');
+        setHasUnread(hasUnreadMessages);
       });
       return () => unsubscribe();
     }

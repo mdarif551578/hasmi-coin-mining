@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import type { Message } from "@/lib/types";
 
 
 export default function ProfilePage() {
@@ -25,12 +26,15 @@ export default function ProfilePage() {
     if (!user) return;
     const q = query(
       collection(db, "messages"),
-      where("userId", "==", user.uid),
-      where("isRead", "==", false),
-      where("senderId", "==", "admin")
+      where("userId", "==", user.uid)
     );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUnreadMessages(snapshot.size);
+      const unreadCount = snapshot.docs
+        .map(doc => doc.data() as Message)
+        .filter(msg => !msg.isRead && msg.senderId === 'admin')
+        .length;
+      setUnreadMessages(unreadCount);
     });
     return () => unsubscribe();
   }, [user]);
