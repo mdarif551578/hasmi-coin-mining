@@ -95,7 +95,7 @@ export default function MessagesPage() {
         return (
             <Avatar className="w-8 h-8">
                 <AvatarFallback className={cn(isUser ? "bg-primary text-primary-foreground" : "bg-muted-foreground text-background")}>
-                    {isUser ? user?.displayName?.charAt(0) : "A"}
+                    {isUser ? user?.displayName?.charAt(0).toUpperCase() : "A"}
                 </AvatarFallback>
             </Avatar>
         );
