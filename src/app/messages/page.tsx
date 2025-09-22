@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDoc, DocumentData } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDoc, DocumentData, orderBy } from "firebase/firestore";
 import type { Message } from "@/lib/types";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -110,9 +110,13 @@ export default function MessagesPage() {
     const UserAvatar = ({ senderId }: { senderId: string }) => {
         const isUser = senderId === user?.uid;
         const sender = senders[senderId];
-        const initial = isUser 
-            ? user?.displayName?.charAt(0).toUpperCase() 
-            : sender?.displayName?.charAt(0).toUpperCase() || 'A';
+        
+        let initial = 'A'; // Default to 'A' for Admin
+        if (isUser) {
+            initial = user?.displayName?.charAt(0).toUpperCase() || 'U';
+        } else if (sender) {
+            initial = sender?.displayName?.charAt(0).toUpperCase() || 'A';
+        }
 
         return (
             <Avatar className="w-8 h-8">
