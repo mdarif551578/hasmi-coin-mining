@@ -43,11 +43,13 @@ export type Task = {
 
 export type MarketListing = {
   id: string;
-  seller: string;
-  amount: number;
-  rate: number;
-  status: 'open' | 'sold' | 'pending';
-}
+  sellerId: string;
+  sellerName: string;
+  amount: number; // HC
+  rate: number; // USD per HC
+  status: 'pending' | 'open' | 'sold' | 'cancelled';
+  createdAt: any;
+};
 
 export type DepositRequest = {
   id: string;
