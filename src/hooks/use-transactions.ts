@@ -51,7 +51,8 @@ export function useTransactions() {
       let q = query(
         collection(db, collName),
         where(config.userIdField, '==', user.uid),
-        // orderBy('createdAt', 'desc'), // This causes the index error
+        // NOTE: We cannot use orderBy here as it requires a composite index 
+        // that must be manually created in Firebase. We will sort on the client.
         limit(TRANSACTIONS_PER_PAGE)
       );
 
@@ -59,28 +60,34 @@ export function useTransactions() {
         q = query(q, startAfter(lastDocs[name]));
       }
 
-      const snapshot = await getDocs(q);
+      try {
+        const snapshot = await getDocs(q);
 
-      if (snapshot.docs.length > 0) {
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const transaction: Transaction = {
-            id: `${config.type}-${doc.id}`,
-            type: config.type,
-            amount: data[config.amountField],
-            status: data.status,
-            date: formatTimestamp(data.createdAt),
-            currency: config.currency,
-          };
-          if (!newTransactions.some(t => t.id === transaction.id)) {
-            newTransactions.push(transaction);
+        if (snapshot.docs.length > 0) {
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const transaction: Transaction = {
+              id: `${config.type}-${doc.id}`,
+              type: config.type,
+              amount: data[config.amountField],
+              status: data.status,
+              date: formatTimestamp(data.createdAt),
+              currency: config.currency,
+            };
+            if (!newTransactions.some(t => t.id === transaction.id)) {
+              newTransactions.push(transaction);
+            }
+          });
+
+          newLastDocs[name] = snapshot.docs[snapshot.docs.length - 1];
+          if (snapshot.docs.length === TRANSACTIONS_PER_PAGE) {
+            anyMore = true;
           }
-        });
-
-        newLastDocs[name] = snapshot.docs[snapshot.docs.length - 1];
-        if (snapshot.docs.length === TRANSACTIONS_PER_PAGE) {
-          anyMore = true;
         }
+      } catch (error) {
+        console.error(`Error fetching from ${collName}:`, error);
+        // This likely means an index is missing if orderBy is used.
+        // We handle this by not using orderBy and sorting on the client.
       }
     });
 
