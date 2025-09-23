@@ -13,7 +13,7 @@ import {
   sendEmailVerification,
 } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, query, collection, where, getDocs, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -39,13 +39,13 @@ const generateReferralCode = async (uid: string) => {
 };
 
 
-export const createUserDocument = async (user: User, referredBy: string | null = null) => {
+export const createUserDocument = async (user: User, displayName: string, referredBy: string | null) => {
     if (!user) return;
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-        const { email, displayName, uid } = user;
+        const { email, uid } = user;
         const newReferralCode = await generateReferralCode(uid);
         
         try {
@@ -56,7 +56,7 @@ export const createUserDocument = async (user: User, referredBy: string | null =
                 wallet_balance: 0,
                 usd_balance: 0,
                 referral_code: newReferralCode,
-                referred_by: referredBy, // Will be null if no valid code was used
+                referred_by: referredBy,
                 role: 'user',
                 last_claim: new Date(0),
                 createdAt: serverTimestamp(),
@@ -68,6 +68,8 @@ export const createUserDocument = async (user: User, referredBy: string | null =
 };
 
 let tempReferredBy: string | null = null;
+let tempDisplayName: string | null = null;
+
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -77,7 +79,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         // This function checks for existence and creates if needed
-        createUserDocument(currentUser, tempReferredBy);
+        createUserDocument(currentUser, tempDisplayName || currentUser.displayName || 'User', tempReferredBy);
+        tempDisplayName = null;
         tempReferredBy = null; // Clear after use
       }
       setUser(currentUser);
@@ -99,15 +102,17 @@ export const useAuth = () => useContext(AuthContext);
 export const signUp = async (name: string, email:string, password: string, referralCode?: string): Promise<{ error?: any }> => {
   let userCredential;
   try {
+    // Step 1: Create the user in Firebase Auth
     userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
-    await updateProfile(newUser, { displayName: name });
-
-    let referredBy: string | null = null;
     
-    // --- START: Referral Logic inside signUp ---
-    if (referralCode) {
-      try {
+    // This is a crucial step to handle all DB operations after auth is successful
+    try {
+      await updateProfile(newUser, { displayName: name });
+      let referredBy: string | null = null;
+
+      // Step 2: Handle referral logic if a code is provided
+      if (referralCode) {
         const q = query(collection(db, "users"), where("referral_code", "==", referralCode.toUpperCase()));
         const querySnapshot = await getDocs(q);
 
@@ -115,6 +120,7 @@ export const signUp = async (name: string, email:string, password: string, refer
           const referringUserDoc = querySnapshot.docs[0];
           referredBy = referringUserDoc.id;
 
+          // Fetch bonus settings
           const settingsDocRef = doc(db, 'settings', 'exchangeRates');
           const settingsDoc = await getDoc(settingsDocRef);
 
@@ -122,6 +128,7 @@ export const signUp = async (name: string, email:string, password: string, refer
             const settingsData = settingsDoc.data();
             const bonusConfig = settingsData.referral_bonus;
             if (bonusConfig?.referrer_bonus > 0 && bonusConfig?.referee_bonus > 0) {
+              // Step 3: Create the referral_bonuses document
               await addDoc(collection(db, "referral_bonuses"), {
                 referrerId: referredBy,
                 refereeId: newUser.uid,
@@ -133,32 +140,28 @@ export const signUp = async (name: string, email:string, password: string, refer
             }
           }
         }
-      } catch (error) {
-        console.error("Error processing referral or creating bonus document:", error);
       }
-    }
-    // --- END: Referral Logic ---
-    
-    // Pass the found referrer to be used by onAuthStateChanged listener
-    tempReferredBy = referredBy;
+      
+      // Step 4: Create the user's profile document in Firestore
+      // We pass the name and referredBy ID to a temporary state for the AuthProvider to pick up.
+      // This is a workaround to ensure the data is available in the onAuthStateChanged listener.
+      tempDisplayName = name;
+      tempReferredBy = referredBy;
 
+
+    } catch (dbError) {
+        // Step 5: Critical Cleanup - If DB operations fail, delete the auth user
+        console.error("Database operation failed after user creation. Cleaning up auth user.", dbError);
+        await newUser.delete();
+        throw dbError; // Re-throw the error to be caught by the outer catch block
+    }
+
+    // Step 6: Finalize by sending verification and signing out
     await sendEmailVerification(newUser);
-    await firebaseSignOut(auth); // Sign out user until they verify email
+    await firebaseSignOut(auth);
     return {};
   } catch (error) {
-    // If user creation fails, we don't need to do much cleanup,
-    // but clearing the temp var is good practice.
-    tempReferredBy = null;
-    
-    // If the user was created but something else failed, delete the user
-    // to allow them to try signing up again.
-    if (userCredential?.user) {
-        try {
-            await userCredential.user.delete();
-        } catch (deleteError) {
-            console.error("Failed to clean up partially created user:", deleteError);
-        }
-    }
+    console.error("Sign up failed:", error);
     return { error };
   }
 };
@@ -181,4 +184,3 @@ export const resetPassword = async (email: string): Promise<{ error?: any }> => 
         return { error };
     }
 }
-
