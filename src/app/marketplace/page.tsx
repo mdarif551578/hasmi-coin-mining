@@ -23,10 +23,12 @@ import { useMarketplace } from "@/hooks/use-marketplace";
 import { useAuth } from "@/lib/auth";
 import { useUserData } from "@/hooks/use-user-data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSettings } from "@/hooks/use-settings";
 
 export default function MarketplacePage() {
   const { user } = useAuth();
   const { userData, loading: userLoading } = useUserData();
+  const { settings, loading: settingsLoading } = useSettings();
   const { listings, loading: listingsLoading, createOffer, isSubmitting, buyOffer } = useMarketplace();
 
   const [open, setOpen] = useState(false);
@@ -53,7 +55,11 @@ export default function MarketplacePage() {
 
   const myPendingOffers = listings.filter(l => l.sellerId === user?.uid && l.status === 'pending');
   const openSellOffers = listings.filter(l => l.status === 'open');
-  const isLoading = listingsLoading || userLoading;
+  const isLoading = listingsLoading || userLoading || settingsLoading;
+  
+  const officialUsdToHcRate = settings?.usd_to_hc || 0;
+  const officialRatePerHc = officialUsdToHcRate > 0 ? (1 / officialUsdToHcRate) : 0;
+
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -109,10 +115,15 @@ export default function MarketplacePage() {
                     value={rate}
                     onChange={(e) => setRate(e.target.value)}
                     className="col-span-3"
-                    placeholder="e.g. 0.01"
+                    placeholder={`e.g. ${officialRatePerHc.toFixed(3)}`}
                     required
                     />
                 </div>
+                 {officialUsdToHcRate > 0 && (
+                    <div className="text-xs text-center text-muted-foreground col-span-4 -mt-2">
+                        Official app rate: 1 USD = {officialUsdToHcRate} HC (${officialRatePerHc.toFixed(3)}/HC)
+                    </div>
+                 )}
                 <DialogFooter>
                     <Button type="submit" disabled={isSubmitting || !amount || !rate}>
                       {isSubmitting && <Loader2 className="animate-spin mr-2" />}
