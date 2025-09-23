@@ -118,7 +118,7 @@ export default function MarketplacePage() {
                         />
                     </div>
                     {officialUsdToHcRate > 0 && (
-                        <div className="text-xs text-center text-muted-foreground -mt-2">
+                        <div className="text-xs text-center text-muted-foreground">
                             Official app rate: 1 USD = {officialUsdToHcRate} HC (${officialRatePerHc.toFixed(3)}/HC)
                         </div>
                     )}
@@ -185,7 +185,7 @@ export default function MarketplacePage() {
                             </div>
                         </CardContent>
                         <div className="bg-card-foreground/5 p-3">
-                            <Button className="w-full h-10" onClick={() => buyOffer(listing)} disabled={listing.sellerId === user?.uid}>
+                            <Button className="w-full h-10" onClick={() => buyOffer(listing)} disabled={listing.sellerId === user?.uid || isSubmitting}>
                                 {listing.sellerId === user?.uid ? "This is your offer" : "Buy Now"}
                             </Button>
                         </div>
