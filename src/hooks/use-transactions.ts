@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, onSnapshot, orderBy, limit, startAfter, DocumentData, QuerySnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit, startAfter, DocumentData, QuerySnapshot, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import type { Transaction } from '@/lib/types';
@@ -45,13 +45,13 @@ export function useTransactions() {
     const newLastDocs = { ...lastDocs };
     let anyMore = false;
 
-    for (const { name, config } of collectionsToQuery) {
-      const collName = name.split('_')[0]; // Handle referral_bonuses_*
+    const promises = collectionsToQuery.map(async ({ name, config }) => {
+      const collName = name.includes('referral_bonuses') ? 'referral_bonuses' : name;
       
       let q = query(
         collection(db, collName),
         where(config.userIdField, '==', user.uid),
-        orderBy('createdAt', 'desc'),
+        // orderBy('createdAt', 'desc'), // This causes the index error
         limit(TRANSACTIONS_PER_PAGE)
       );
 
@@ -59,11 +59,7 @@ export function useTransactions() {
         q = query(q, startAfter(lastDocs[name]));
       }
 
-      const snapshot = await new Promise<QuerySnapshot<DocumentData>>((resolve, reject) => {
-        const unsubscribe = onSnapshot(q, resolve, reject);
-        // We only want the first result, not continuous updates for pagination
-        // This is a simplified approach. For full realtime, this hook would be more complex.
-      });
+      const snapshot = await getDocs(q);
 
       if (snapshot.docs.length > 0) {
         snapshot.forEach(doc => {
@@ -76,7 +72,6 @@ export function useTransactions() {
             date: formatTimestamp(data.createdAt),
             currency: config.currency,
           };
-          // Avoid duplicates
           if (!newTransactions.some(t => t.id === transaction.id)) {
             newTransactions.push(transaction);
           }
@@ -87,9 +82,11 @@ export function useTransactions() {
           anyMore = true;
         }
       }
-    }
+    });
+
+    await Promise.all(promises);
     
-    // Sort all transactions together by date
+    // Sort all transactions together by date on the client
     newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     setTransactions(newTransactions);
@@ -99,7 +96,6 @@ export function useTransactions() {
   }, [user, transactions, lastDocs]);
 
   useEffect(() => {
-    // Initial fetch
     if (user) {
         fetchTransactions(true);
     } else {
