@@ -86,50 +86,48 @@ export default function MarketplacePage() {
                     Enter the amount of Hasmi Coin (HC) you want to sell and the rate. Your offer will be reviewed by an admin. Your available HC will be locked until the offer is fulfilled or cancelled.
                 </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                  <div className="text-sm p-2 rounded-md bg-muted">
-                    Available to sell: <span className="font-bold">{userData?.wallet_balance?.toLocaleString() || 0} HC</span>
-                  </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="amount" className="text-right">
-                    Amount (HC)
-                    </Label>
-                    <Input
-                    id="amount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="col-span-3"
-                    placeholder="e.g. 500"
-                    required
-                    />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="rate" className="text-right">
-                    Rate ($/HC)
-                    </Label>
-                    <Input
-                    id="rate"
-                    type="number"
-                    step="0.001"
-                    value={rate}
-                    onChange={(e) => setRate(e.target.value)}
-                    className="col-span-3"
-                    placeholder={`e.g. ${officialRatePerHc.toFixed(3)}`}
-                    required
-                    />
-                </div>
-                 {officialUsdToHcRate > 0 && (
-                    <div className="text-xs text-center text-muted-foreground col-span-4 -mt-2">
-                        Official app rate: 1 USD = {officialUsdToHcRate} HC (${officialRatePerHc.toFixed(3)}/HC)
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="text-sm p-3 rounded-md bg-muted">
+                        Available to sell: <span className="font-bold">{userData?.wallet_balance?.toLocaleString() || 0} HC</span>
                     </div>
-                 )}
-                <DialogFooter>
-                    <Button type="submit" disabled={isSubmitting || !amount || !rate}>
-                      {isSubmitting && <Loader2 className="animate-spin mr-2" />}
-                      Submit for Approval
-                    </Button>
-                </DialogFooter>
+                    <div className="space-y-2">
+                        <Label htmlFor="amount">
+                        Amount (HC)
+                        </Label>
+                        <Input
+                        id="amount"
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="e.g. 500"
+                        required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="rate">
+                        Rate ($/HC)
+                        </Label>
+                        <Input
+                        id="rate"
+                        type="number"
+                        step="0.001"
+                        value={rate}
+                        onChange={(e) => setRate(e.target.value)}
+                        placeholder={`e.g. ${officialRatePerHc.toFixed(3)}`}
+                        required
+                        />
+                    </div>
+                    {officialUsdToHcRate > 0 && (
+                        <div className="text-xs text-center text-muted-foreground -mt-2">
+                            Official app rate: 1 USD = {officialUsdToHcRate} HC (${officialRatePerHc.toFixed(3)}/HC)
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button type="submit" disabled={isSubmitting || !amount || !rate} className="w-full">
+                        {isSubmitting && <Loader2 className="animate-spin mr-2" />}
+                        Submit for Approval
+                        </Button>
+                    </DialogFooter>
                 </form>
             </DialogContent>
             </Dialog>
