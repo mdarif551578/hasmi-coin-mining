@@ -11,7 +11,7 @@ export default function Dashboard() {
         <ReferralCard />
         <MiningStatusCard />
       </div>
-      <TransactionsTable limit={5} />
+      <TransactionsTable />
     </div>
   );
 }

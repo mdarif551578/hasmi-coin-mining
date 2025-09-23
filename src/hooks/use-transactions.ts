@@ -1,11 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, query, where, onSnapshot, orderBy, limit, startAfter, DocumentData, QuerySnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import type { Transaction } from '@/lib/types';
+
+const TRANSACTIONS_PER_PAGE = 10;
 
 function formatTimestamp(timestamp: any): string {
     if (!timestamp) return new Date().toISOString();
@@ -19,8 +21,10 @@ export function useTransactions() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDocs, setLastDocs] = useState<Record<string, DocumentData | null>>({});
 
-  useEffect(() => {
+  const fetchTransactions = useCallback(async (isInitialLoad = false) => {
     if (!user) {
       setLoading(false);
       setTransactions([]);
@@ -29,13 +33,40 @@ export function useTransactions() {
 
     setLoading(true);
 
-    const allTransactions = new Map<string, Transaction>();
-    const unsubscribes: (() => void)[] = [];
+    const collectionsToQuery = [
+      { name: 'deposits', config: { type: 'deposit', amountField: 'amount', currency: 'USD', userIdField: 'userId' } },
+      { name: 'withdrawals', config: { type: 'withdraw', amountField: 'amount', currency: 'USD', userIdField: 'userId' } },
+      { name: 'exchange_requests', config: { type: 'exchange', amountField: 'hcAmount', currency: 'HC', userIdField: 'userId' } },
+      { name: 'referral_bonuses_referrer', config: { type: 'referral', amountField: 'referrerBonus', currency: 'HC', userIdField: 'referrerId' } },
+      { name: 'referral_bonuses_referee', config: { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' } },
+    ];
 
-    const setupSubscription = (collName: string, config: any) => {
-      const q = query(collection(db, collName), where(config.userIdField, '==', user.uid));
-      const unsub = onSnapshot(q, (snapshot) => {
-        snapshot.docs.forEach(doc => {
+    let newTransactions: Transaction[] = isInitialLoad ? [] : [...transactions];
+    const newLastDocs = { ...lastDocs };
+    let anyMore = false;
+
+    for (const { name, config } of collectionsToQuery) {
+      const collName = name.split('_')[0]; // Handle referral_bonuses_*
+      
+      let q = query(
+        collection(db, collName),
+        where(config.userIdField, '==', user.uid),
+        orderBy('createdAt', 'desc'),
+        limit(TRANSACTIONS_PER_PAGE)
+      );
+
+      if (!isInitialLoad && lastDocs[name]) {
+        q = query(q, startAfter(lastDocs[name]));
+      }
+
+      const snapshot = await new Promise<QuerySnapshot<DocumentData>>((resolve, reject) => {
+        const unsubscribe = onSnapshot(q, resolve, reject);
+        // We only want the first result, not continuous updates for pagination
+        // This is a simplified approach. For full realtime, this hook would be more complex.
+      });
+
+      if (snapshot.docs.length > 0) {
+        snapshot.forEach(doc => {
           const data = doc.data();
           const transaction: Transaction = {
             id: `${config.type}-${doc.id}`,
@@ -45,38 +76,44 @@ export function useTransactions() {
             date: formatTimestamp(data.createdAt),
             currency: config.currency,
           };
-          allTransactions.set(transaction.id, transaction);
+          // Avoid duplicates
+          if (!newTransactions.some(t => t.id === transaction.id)) {
+            newTransactions.push(transaction);
+          }
         });
 
-        const sortedTransactions = Array.from(allTransactions.values())
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        setTransactions(sortedTransactions);
+        newLastDocs[name] = snapshot.docs[snapshot.docs.length - 1];
+        if (snapshot.docs.length === TRANSACTIONS_PER_PAGE) {
+          anyMore = true;
+        }
+      }
+    }
+    
+    // Sort all transactions together by date
+    newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setTransactions(newTransactions);
+    setLastDocs(newLastDocs);
+    setHasMore(anyMore);
+    setLoading(false);
+  }, [user, transactions, lastDocs]);
+
+  useEffect(() => {
+    // Initial fetch
+    if (user) {
+        fetchTransactions(true);
+    } else {
+        setTransactions([]);
         setLoading(false);
-      }, (error) => {
-        console.error(`Error fetching ${collName}:`, error);
-        setLoading(false);
-      });
-      unsubscribes.push(unsub);
-    };
-
-    // Standard transactions
-    setupSubscription('deposits', { type: 'deposit', amountField: 'amount', currency: 'USD', userIdField: 'userId' });
-    setupSubscription('withdrawals', { type: 'withdraw', amountField: 'amount', currency: 'USD', userIdField: 'userId' });
-    setupSubscription('exchange_requests', { type: 'exchange', amountField: 'hcAmount', currency: 'HC', userIdField: 'userId' });
-
-    // Referral bonuses (as referrer)
-    setupSubscription('referral_bonuses', { type: 'referral', amountField: 'referrerBonus', currency: 'HC', userIdField: 'referrerId' });
-
-    // Referral bonuses (as referee)
-    setupSubscription('referral_bonuses', { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' });
-
-
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-    };
-
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  return { transactions, loading };
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      fetchTransactions(false);
+    }
+  };
+
+  return { transactions, loading, loadMore, hasMore };
 }

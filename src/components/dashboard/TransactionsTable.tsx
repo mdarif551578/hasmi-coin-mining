@@ -1,13 +1,14 @@
 
 'use client';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/lib/types";
-import { ArrowDownLeft, ArrowUpRight, Cog, CheckSquare, Store, Users, HandCoins, Gem, Repeat } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Cog, CheckSquare, Store, Users, HandCoins, Gem, Repeat, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTransactions } from "@/hooks/use-transactions";
 import { Skeleton } from "../ui/skeleton";
+import { Button } from "../ui/button";
 
 const TransactionIcon = ({ type }: { type: Transaction['type'] }) => {
     const iconMap = {
@@ -47,9 +48,8 @@ const isPositive = (type: Transaction['type'], currency: Transaction['currency']
     return !['withdraw', 'marketplace-buy', 'exchange'].includes(type);
 };
 
-export function TransactionsTable({ className, limit }: { className?: string, limit?: number }) {
-    const { transactions, loading } = useTransactions();
-    const displayTransactions = limit ? transactions.slice(0, limit) : transactions;
+export function TransactionsTable({ className }: { className?: string }) {
+    const { transactions, loading, loadMore, hasMore } = useTransactions();
 
     return (
         <Card className={cn("h-full flex flex-col rounded-2xl", className)}>
@@ -69,8 +69,8 @@ export function TransactionsTable({ className, limit }: { className?: string, li
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {loading ? (
-                                Array.from({ length: limit || 5 }).map((_, i) => (
+                            {loading && transactions.length === 0 ? (
+                                Array.from({ length: 5 }).map((_, i) => (
                                     <TableRow key={i}>
                                         <TableCell className="pl-4 py-3"><Skeleton className="w-5 h-5 rounded-full" /></TableCell>
                                         <TableCell><Skeleton className="w-20 h-4" /></TableCell>
@@ -78,8 +78,8 @@ export function TransactionsTable({ className, limit }: { className?: string, li
                                         <TableCell className="text-right pr-4"><Skeleton className="w-16 h-5 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))
-                            ) : displayTransactions.length > 0 ? (
-                                displayTransactions.map(tx => (
+                            ) : transactions.length > 0 ? (
+                                transactions.map(tx => (
                                     <TableRow key={tx.id}>
                                         <TableCell className="pl-4 py-2"><TransactionIcon type={tx.type} /></TableCell>
                                         <TableCell className="font-medium capitalize text-sm py-2">{tx.type.replace('-', ' ')}</TableCell>
@@ -105,6 +105,17 @@ export function TransactionsTable({ className, limit }: { className?: string, li
                     </Table>
                 </div>
             </CardContent>
+             {(hasMore || loading) && (
+                <CardFooter className="justify-center">
+                    <Button
+                        variant="outline"
+                        onClick={loadMore}
+                        disabled={loading}
+                    >
+                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</> : 'Load More'}
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
     );
 }
