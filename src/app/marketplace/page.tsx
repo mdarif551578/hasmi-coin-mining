@@ -37,7 +37,7 @@ export default function MarketplacePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userData || !user) return;
+    if (!userData || !user || !userData.displayName) return;
     
     await createOffer({ 
       amount: parseFloat(amount), 
