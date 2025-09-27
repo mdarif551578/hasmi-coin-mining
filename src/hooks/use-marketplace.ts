@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, orderBy, doc, updateDoc, limit, getDocs, startAfter, DocumentData, QuerySnapshot } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, orderBy, doc, updateDoc, limit, getDocs, startAfter, DocumentData, runTransaction, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import type { MarketListing, BuyRequest } from '@/lib/types';
@@ -149,7 +149,6 @@ export function useMarketplace() {
     
     setIsSubmitting(true);
     try {
-        // Create a buy request
         await addDoc(collection(db, 'buy_requests'), {
             listingId: listing.id,
             buyerId: user.uid,
@@ -161,7 +160,6 @@ export function useMarketplace() {
             createdAt: serverTimestamp(),
         });
 
-        // Mark the listing as pending sale to lock it
         const listingDocRef = doc(db, 'market_listings', listing.id);
         await updateDoc(listingDocRef, {
             status: 'pending_sale'
@@ -177,5 +175,37 @@ export function useMarketplace() {
     }
   }
 
-  return { listings, buyRequests, loading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore };
+  const cancelOffer = async (listingId: string) => {
+    setIsSubmitting(true);
+    try {
+        await deleteDoc(doc(db, 'market_listings', listingId));
+        toast({ title: 'Offer Cancelled', description: 'Your sell offer has been cancelled.' });
+    } catch (error) {
+        console.error("Error cancelling offer:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel your offer.' });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const cancelBuyRequest = async (request: BuyRequest) => {
+    setIsSubmitting(true);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const requestDocRef = doc(db, 'buy_requests', request.id);
+            const listingDocRef = doc(db, 'market_listings', request.listingId);
+            
+            transaction.delete(requestDocRef);
+            transaction.update(listingDocRef, { status: 'open' });
+        });
+        toast({ title: 'Buy Request Cancelled', description: 'Your buy request has been successfully cancelled.' });
+    } catch (error) {
+        console.error("Error cancelling buy request:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel your buy request.' });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  return { listings, buyRequests, loading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore, cancelOffer, cancelBuyRequest };
 }

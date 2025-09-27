@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Repeat, Loader2 } from "lucide-react";
+import { Plus, Repeat, Loader2, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +40,7 @@ export default function MarketplacePage() {
   const { user } = useAuth();
   const { userData, loading: userLoading } = useUserData();
   const { settings, loading: settingsLoading } = useSettings();
-  const { listings, buyRequests, loading: listingsLoading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore } = useMarketplace();
+  const { listings, buyRequests, loading: listingsLoading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore, cancelOffer, cancelBuyRequest } = useMarketplace();
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -161,7 +172,28 @@ export default function MarketplacePage() {
                           Rate: ${listing.rate.toFixed(3)} | Total: ${(listing.amount * listing.rate).toFixed(2)}
                         </p>
                       </div>
-                      <Badge variant="secondary" className="capitalize text-xs">{listing.status}</Badge>
+                      <div className="flex items-center gap-1">
+                          <Badge variant="secondary" className="capitalize text-xs">{listing.status}</Badge>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={isSubmitting}>
+                                    <Trash2 className="size-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently cancel your sell offer for {listing.amount.toLocaleString()} HC. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Back</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => cancelOffer(listing.id)} className="bg-destructive hover:bg-destructive/90">Cancel Offer</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -182,7 +214,28 @@ export default function MarketplacePage() {
                           Total: ${request.totalPrice.toFixed(2)}
                         </p>
                       </div>
-                      <Badge variant="secondary" className="capitalize text-xs">Awaiting Approval</Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="capitalize text-xs">Awaiting Approval</Badge>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={isSubmitting}>
+                                    <Trash2 className="size-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently cancel your buy request for {request.amount.toLocaleString()} HC. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Back</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => cancelBuyRequest(request)} className="bg-destructive hover:bg-destructive/90">Cancel Request</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
