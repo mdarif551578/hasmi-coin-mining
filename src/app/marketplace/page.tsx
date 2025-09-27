@@ -71,7 +71,7 @@ export default function MarketplacePage() {
 
   const myPendingOffers = listings.filter(l => l.sellerId === user?.uid && l.status === 'pending');
   const myBuyRequests = buyRequests.filter(br => br.status === 'pending');
-  const openSellOffers = listings.filter(l => l.status === 'open');
+  const openSellOffers = listings.filter(l => l.status === 'open' || l.status === 'pending_sale');
   const isLoading = listingsLoading || userLoading || settingsLoading;
   
   const officialUsdToHcRate = settings?.usd_to_hc || 0;
@@ -261,14 +261,25 @@ export default function MarketplacePage() {
                                     <p className="font-bold text-xl text-primary">${(listing.amount * listing.rate).toFixed(2)}</p>
                                 </div>
                             </div>
-                            <div className="text-xs text-muted-foreground mt-2">
-                                <span>Rate: ${listing.rate.toFixed(3)}/HC</span> &middot; <span>Seller: {listing.sellerName}</span>
+                            <div className="text-xs text-muted-foreground mt-2 flex justify-between items-center">
+                                <span>Rate: ${listing.rate.toFixed(3)}/HC &middot; Seller: {listing.sellerName}</span>
+                                {listing.status === 'pending_sale' && (
+                                    <Badge variant="secondary" className="text-xs">Sale Pending</Badge>
+                                )}
                             </div>
                         </CardContent>
                         <div className="bg-card-foreground/5 p-3">
-                            <Button className="w-full h-10" onClick={() => handleBuy(listing)} disabled={listing.sellerId === user?.uid || isSubmitting}>
+                            <Button 
+                                className="w-full h-10" 
+                                onClick={() => handleBuy(listing)} 
+                                disabled={listing.sellerId === user?.uid || isSubmitting || listing.status === 'pending_sale'}>
                                  {isSubmitting && <Loader2 className="animate-spin mr-2" />}
-                                {listing.sellerId === user?.uid ? "This is your offer" : "Buy Now"}
+                                 {listing.sellerId === user?.uid 
+                                    ? "This is your offer" 
+                                    : listing.status === 'pending_sale' 
+                                    ? "Sale Pending" 
+                                    : "Buy Now"
+                                 }
                             </Button>
                         </div>
                     </Card>
