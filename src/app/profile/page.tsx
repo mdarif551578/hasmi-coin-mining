@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield, User as UserIcon, Activity, MessageSquare, Wallet } from "lucide-react";
+import { LogOut, Shield, User as UserIcon, MessageSquare } from "lucide-react";
 import { useAuth, signOut } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useUserData } from "@/hooks/use-user-data";
@@ -94,12 +94,6 @@ export default function ProfilePage() {
                 <Link href="/profile/account">
                     <UserIcon />
                     Account
-                </Link>
-            </Button>
-             <Button variant="ghost" className="w-full justify-start gap-2 h-11" asChild>
-                <Link href="/wallet">
-                    <Wallet />
-                    Wallet & Activity
                 </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start gap-2 h-11" asChild>
