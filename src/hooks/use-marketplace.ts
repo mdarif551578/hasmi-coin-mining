@@ -39,13 +39,19 @@ export function useMarketplace() {
     if (user) {
         const buyRequestsQuery = query(
             collection(db, 'buy_requests'),
-            where('buyerId', '==', user.uid),
-            orderBy('createdAt', 'desc')
+            where('buyerId', '==', user.uid)
         );
         unsubscribeBuyRequests = onSnapshot(buyRequestsQuery, (snapshot) => {
             const fetchedRequests: BuyRequest[] = [];
             snapshot.forEach((doc) => {
                 fetchedRequests.push({ id: doc.id, ...doc.data()} as BuyRequest);
+            });
+            // Sort client-side to avoid needing a composite index
+            fetchedRequests.sort((a, b) => {
+                if (a.createdAt && b.createdAt) {
+                    return b.createdAt.toMillis() - a.createdAt.toMillis();
+                }
+                return 0;
             });
             setBuyRequests(fetchedRequests);
         });
