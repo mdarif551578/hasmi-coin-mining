@@ -3,7 +3,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Repeat, Loader2 } from "lucide-react";
 import {
@@ -29,7 +29,7 @@ export default function MarketplacePage() {
   const { user } = useAuth();
   const { userData, loading: userLoading } = useUserData();
   const { settings, loading: settingsLoading } = useSettings();
-  const { listings, loading: listingsLoading, createOffer, isSubmitting, buyOffer } = useMarketplace();
+  const { listings, buyRequests, loading: listingsLoading, createOffer, isSubmitting, buyOffer } = useMarketplace();
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -53,7 +53,13 @@ export default function MarketplacePage() {
     }
   };
 
+  const handleBuy = (listing: any) => {
+    if (!userData) return;
+    buyOffer(listing, userData.usd_balance);
+  }
+
   const myPendingOffers = listings.filter(l => l.sellerId === user?.uid && l.status === 'pending');
+  const myBuyRequests = buyRequests.filter(br => br.status === 'pending');
   const openSellOffers = listings.filter(l => l.status === 'open');
   const isLoading = listingsLoading || userLoading || settingsLoading;
   
@@ -144,7 +150,7 @@ export default function MarketplacePage() {
         <>
           {myPendingOffers.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-2">My Pending Offers</h2>
+              <h2 className="text-lg font-semibold mb-2">My Pending Sell Offers</h2>
               <div className="space-y-3">
                 {myPendingOffers.map(listing => (
                   <Card key={listing.id} className="rounded-xl bg-card-foreground/5">
@@ -163,8 +169,30 @@ export default function MarketplacePage() {
             </div>
           )}
 
+           {myBuyRequests.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-lg font-semibold mb-2">My Pending Buy Requests</h2>
+              <div className="space-y-3">
+                {myBuyRequests.map(request => (
+                  <Card key={request.id} className="rounded-xl bg-card-foreground/5">
+                    <CardContent className="p-4 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-lg">{request.amount.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">HC</span></p>
+                        <p className="text-xs text-muted-foreground">
+                          Total: ${request.totalPrice.toFixed(2)}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="capitalize text-xs">Awaiting Approval</Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+
           <div>
-            <h2 className="text-lg font-semibold mb-2 mt-4">Open Sell Offers</h2>
+            <h2 className="text-lg font-semibold mb-2 mt-6">Open Sell Offers</h2>
             {openSellOffers.length > 0 ? (
                 <div className="space-y-3">
                 {openSellOffers.map(listing => (
@@ -185,7 +213,8 @@ export default function MarketplacePage() {
                             </div>
                         </CardContent>
                         <div className="bg-card-foreground/5 p-3">
-                            <Button className="w-full h-10" onClick={() => buyOffer(listing)} disabled={listing.sellerId === user?.uid || isSubmitting}>
+                            <Button className="w-full h-10" onClick={() => handleBuy(listing)} disabled={listing.sellerId === user?.uid || isSubmitting}>
+                                 {isSubmitting && <Loader2 className="animate-spin mr-2" />}
                                 {listing.sellerId === user?.uid ? "This is your offer" : "Buy Now"}
                             </Button>
                         </div>

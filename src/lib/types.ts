@@ -47,9 +47,21 @@ export type MarketListing = {
   sellerName: string;
   amount: number; // HC
   rate: number; // USD per HC
-  status: 'pending' | 'open' | 'sold' | 'cancelled';
+  status: 'pending' | 'open' | 'sold' | 'cancelled' | 'pending_sale';
   createdAt: any;
 };
+
+export type BuyRequest = {
+    id: string;
+    listingId: string;
+    buyerId: string;
+    sellerId: string;
+    amount: number;
+    rate: number;
+    totalPrice: number;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: any;
+}
 
 export type DepositRequest = {
   id: string;
