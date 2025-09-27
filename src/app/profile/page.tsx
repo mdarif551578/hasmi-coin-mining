@@ -90,9 +90,11 @@ export default function ProfilePage() {
                     {unreadMessages > 0 && <Badge className="ml-auto">{unreadMessages}</Badge>}
                 </Link>
             </Button>
-            <Button variant="ghost" className="w-full justify-start gap-2 h-11">
-                <UserIcon />
-                Account
+            <Button variant="ghost" className="w-full justify-start gap-2 h-11" asChild>
+                <Link href="/profile/account">
+                    <UserIcon />
+                    Account
+                </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start gap-2 h-11">
                 <Shield />
@@ -111,4 +113,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
