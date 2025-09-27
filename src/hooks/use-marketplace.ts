@@ -14,7 +14,8 @@ export function useMarketplace() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [listings, setListings] = useState<MarketListing[]>([]);
-  const [buyRequests, setBuyRequests] = useState<BuyRequest[]>([]);
+  const [userBuyRequests, setUserBuyRequests] = useState<BuyRequest[]>([]);
+  const [allPendingBuyRequests, setAllPendingBuyRequests] = useState<BuyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -24,7 +25,7 @@ export function useMarketplace() {
 
   useEffect(() => {
     setLoading(true);
-    // Initial query for the first page of listings
+    // Query for all listings
     const listingsQuery = query(
       collection(db, 'market_listings'),
       orderBy('createdAt', 'desc'),
@@ -48,32 +49,41 @@ export function useMarketplace() {
       setLoading(false);
     });
     
-    let unsubscribeBuyRequests = () => {};
+    // Query for all pending buy requests globally
+    const allBuyRequestsQuery = query(
+        collection(db, 'buy_requests'),
+        where('status', '==', 'pending')
+    );
+    const unsubscribeAllBuyRequests = onSnapshot(allBuyRequestsQuery, (snapshot) => {
+        const fetchedRequests: BuyRequest[] = [];
+        snapshot.forEach((doc) => {
+            fetchedRequests.push({ id: doc.id, ...doc.data()} as BuyRequest);
+        });
+        setAllPendingBuyRequests(fetchedRequests);
+    });
+    
+    let unsubscribeUserBuyRequests = () => {};
     if (user) {
-        const buyRequestsQuery = query(
+        // Query for the current user's buy requests
+        const userBuyRequestsQuery = query(
             collection(db, 'buy_requests'),
             where('buyerId', '==', user.uid)
         );
-        unsubscribeBuyRequests = onSnapshot(buyRequestsQuery, (snapshot) => {
+        unsubscribeUserBuyRequests = onSnapshot(userBuyRequestsQuery, (snapshot) => {
             const fetchedRequests: BuyRequest[] = [];
             snapshot.forEach((doc) => {
                 fetchedRequests.push({ id: doc.id, ...doc.data()} as BuyRequest);
             });
-            // Sort client-side to avoid needing a composite index
-            fetchedRequests.sort((a, b) => {
-                if (a.createdAt && b.createdAt) {
-                    return b.createdAt.toMillis() - a.createdAt.toMillis();
-                }
-                return 0;
-            });
-            setBuyRequests(fetchedRequests);
+            fetchedRequests.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            setUserBuyRequests(fetchedRequests);
         });
     }
 
 
     return () => {
         unsubscribeListings();
-        unsubscribeBuyRequests();
+        unsubscribeUserBuyRequests();
+        unsubscribeAllBuyRequests();
     };
   }, [user]);
 
@@ -160,11 +170,6 @@ export function useMarketplace() {
             createdAt: serverTimestamp(),
         });
 
-        const listingDocRef = doc(db, 'market_listings', listing.id);
-        await updateDoc(listingDocRef, {
-            status: 'pending_sale'
-        });
-
         toast({ title: 'Buy Request Submitted', description: 'Your request to buy this offer is pending admin approval.' });
 
     } catch (error) {
@@ -191,13 +196,8 @@ export function useMarketplace() {
   const cancelBuyRequest = async (request: BuyRequest) => {
     setIsSubmitting(true);
     try {
-        await runTransaction(db, async (transaction) => {
-            const requestDocRef = doc(db, 'buy_requests', request.id);
-            const listingDocRef = doc(db, 'market_listings', request.listingId);
-            
-            transaction.delete(requestDocRef);
-            transaction.update(listingDocRef, { status: 'open' });
-        });
+        const requestDocRef = doc(db, 'buy_requests', request.id);
+        await deleteDoc(requestDocRef);
         toast({ title: 'Buy Request Cancelled', description: 'Your buy request has been successfully cancelled.' });
     } catch (error) {
         console.error("Error cancelling buy request:", error);
@@ -207,5 +207,5 @@ export function useMarketplace() {
     }
   };
 
-  return { listings, buyRequests, loading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore, cancelOffer, cancelBuyRequest };
+  return { listings, userBuyRequests, allPendingBuyRequests, loading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore, cancelOffer, cancelBuyRequest };
 }

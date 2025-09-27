@@ -47,7 +47,7 @@ export type MarketListing = {
   sellerName: string;
   amount: number; // HC
   rate: number; // USD per HC
-  status: 'pending' | 'open' | 'sold' | 'cancelled' | 'pending_sale';
+  status: 'pending' | 'open' | 'sold' | 'cancelled';
   createdAt: any;
 };
 

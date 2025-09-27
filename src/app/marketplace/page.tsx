@@ -40,7 +40,7 @@ export default function MarketplacePage() {
   const { user } = useAuth();
   const { userData, loading: userLoading } = useUserData();
   const { settings, loading: settingsLoading } = useSettings();
-  const { listings, buyRequests, loading: listingsLoading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore, cancelOffer, cancelBuyRequest } = useMarketplace();
+  const { listings, userBuyRequests, allPendingBuyRequests, loading: listingsLoading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore, cancelOffer, cancelBuyRequest } = useMarketplace();
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -70,8 +70,8 @@ export default function MarketplacePage() {
   }
 
   const myPendingOffers = listings.filter(l => l.sellerId === user?.uid && l.status === 'pending');
-  const myBuyRequests = buyRequests.filter(br => br.status === 'pending');
-  const openSellOffers = listings.filter(l => l.status === 'open' || l.status === 'pending_sale');
+  const myBuyRequests = userBuyRequests.filter(br => br.status === 'pending');
+  const openSellOffers = listings.filter(l => l.status === 'open');
   const isLoading = listingsLoading || userLoading || settingsLoading;
   
   const officialUsdToHcRate = settings?.usd_to_hc || 0;
@@ -248,7 +248,10 @@ export default function MarketplacePage() {
             <h2 className="text-lg font-semibold mb-2 mt-6">Open Sell Offers</h2>
             {openSellOffers.length > 0 ? (
                 <div className="space-y-3">
-                {openSellOffers.map(listing => (
+                {openSellOffers.map(listing => {
+                    const hasPendingBuy = allPendingBuyRequests.some(br => br.listingId === listing.id);
+
+                    return (
                     <Card key={listing.id} className="rounded-xl overflow-hidden">
                         <CardContent className="p-4">
                             <div className="flex justify-between items-start">
@@ -263,7 +266,7 @@ export default function MarketplacePage() {
                             </div>
                             <div className="text-xs text-muted-foreground mt-2 flex justify-between items-center">
                                 <span>Rate: ${listing.rate.toFixed(3)}/HC &middot; Seller: {listing.sellerName}</span>
-                                {listing.status === 'pending_sale' && (
+                                {hasPendingBuy && (
                                     <Badge variant="secondary" className="text-xs">Sale Pending</Badge>
                                 )}
                             </div>
@@ -272,18 +275,18 @@ export default function MarketplacePage() {
                             <Button 
                                 className="w-full h-10" 
                                 onClick={() => handleBuy(listing)} 
-                                disabled={listing.sellerId === user?.uid || isSubmitting || listing.status === 'pending_sale'}>
+                                disabled={listing.sellerId === user?.uid || isSubmitting || hasPendingBuy}>
                                  {isSubmitting && <Loader2 className="animate-spin mr-2" />}
                                  {listing.sellerId === user?.uid 
                                     ? "This is your offer" 
-                                    : listing.status === 'pending_sale' 
+                                    : hasPendingBuy 
                                     ? "Sale Pending" 
                                     : "Buy Now"
                                  }
                             </Button>
                         </div>
                     </Card>
-                ))}
+                )})}
                 </div>
             ) : (
                 <div className="text-center py-10">
