@@ -52,9 +52,10 @@ export default function ProfilePage() {
        </div>
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 flex-wrap">
             <UserIcon className="size-5 text-primary" />
             <span>{loading ? <Skeleton className="w-24 h-5" /> : userData?.displayName || "User"}</span>
+             {loading ? <Skeleton className="w-16 h-6" /> : <Badge variant="secondary" className="capitalize">{userData?.mining_plan || "Free"}</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">

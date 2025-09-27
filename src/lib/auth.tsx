@@ -58,6 +58,7 @@ export const createUserDocument = async (user: User, displayName: string, referr
                 referral_code: newReferralCode,
                 referred_by: referredBy,
                 role: 'user',
+                mining_plan: 'Free',
                 last_claim: new Date(0),
                 createdAt: serverTimestamp(),
             });
