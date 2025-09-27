@@ -96,9 +96,11 @@ export default function ProfilePage() {
                     Account
                 </Link>
             </Button>
-            <Button variant="ghost" className="w-full justify-start gap-2 h-11">
-                <Shield />
-                Security
+            <Button variant="ghost" className="w-full justify-start gap-2 h-11" asChild>
+                <Link href="/profile/security">
+                    <Shield />
+                    Security
+                </Link>
             </Button>
              <Button variant="ghost" className="w-full justify-start gap-2 h-11">
                 <Activity />
