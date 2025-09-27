@@ -1,12 +1,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, orderBy, doc, updateDoc, limit, getDocs, startAfter, DocumentData, QuerySnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import type { MarketListing, BuyRequest } from '@/lib/types';
 import { useToast } from './use-toast';
+
+const LISTINGS_PER_PAGE = 15;
 
 export function useMarketplace() {
   const { user } = useAuth();
@@ -15,12 +17,18 @@ export function useMarketplace() {
   const [buyRequests, setBuyRequests] = useState<BuyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [lastListing, setLastListing] = useState<DocumentData | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    // Initial query for the first page of listings
     const listingsQuery = query(
       collection(db, 'market_listings'),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(LISTINGS_PER_PAGE)
     );
 
     const unsubscribeListings = onSnapshot(listingsQuery, (snapshot) => {
@@ -29,6 +37,11 @@ export function useMarketplace() {
         fetchedListings.push({ id: doc.id, ...doc.data() } as MarketListing);
       });
       setListings(fetchedListings);
+      
+      const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+      setLastListing(lastVisible);
+      setHasMore(snapshot.docs.length === LISTINGS_PER_PAGE);
+
       setLoading(false);
     }, (error) => {
       console.error("Error fetching market listings:", error);
@@ -63,6 +76,34 @@ export function useMarketplace() {
         unsubscribeBuyRequests();
     };
   }, [user]);
+
+  const loadMoreListings = useCallback(async () => {
+    if (!lastListing || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const nextQuery = query(
+        collection(db, 'market_listings'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastListing),
+        limit(LISTINGS_PER_PAGE)
+      );
+
+      const snapshot = await getDocs(nextQuery);
+      const newDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MarketListing));
+      
+      setListings(prev => [...prev, ...newDocs]);
+      
+      const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+      setLastListing(lastVisible);
+      setHasMore(snapshot.docs.length === LISTINGS_PER_PAGE);
+    } catch (error) {
+      console.error("Error loading more listings:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch more offers.' });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [lastListing, hasMore, toast]);
 
   const createOffer = async ({ amount, rate, userBalance, userDisplayName }: { amount: number, rate: number, userBalance: number, userDisplayName: string }) => {
     if (!user) {
@@ -136,5 +177,5 @@ export function useMarketplace() {
     }
   }
 
-  return { listings, buyRequests, loading, createOffer, isSubmitting, buyOffer };
+  return { listings, buyRequests, loading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore };
 }

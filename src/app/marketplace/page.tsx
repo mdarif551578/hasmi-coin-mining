@@ -29,7 +29,7 @@ export default function MarketplacePage() {
   const { user } = useAuth();
   const { userData, loading: userLoading } = useUserData();
   const { settings, loading: settingsLoading } = useSettings();
-  const { listings, buyRequests, loading: listingsLoading, createOffer, isSubmitting, buyOffer } = useMarketplace();
+  const { listings, buyRequests, loading: listingsLoading, createOffer, isSubmitting, buyOffer, hasMore, loadMoreListings, loadingMore } = useMarketplace();
 
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -224,6 +224,17 @@ export default function MarketplacePage() {
             ) : (
                 <div className="text-center py-10">
                     <p className="text-muted-foreground">No open offers at the moment.</p>
+                </div>
+            )}
+             {(hasMore || loadingMore) && (
+                <div className="flex justify-center mt-6">
+                    <Button
+                        variant="outline"
+                        onClick={loadMoreListings}
+                        disabled={loadingMore}
+                    >
+                        {loadingMore ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</> : 'Load More Offers'}
+                    </Button>
                 </div>
             )}
           </div>
