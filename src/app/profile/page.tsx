@@ -102,9 +102,11 @@ export default function ProfilePage() {
                     Security
                 </Link>
             </Button>
-             <Button variant="ghost" className="w-full justify-start gap-2 h-11">
-                <Activity />
-                Activity Log
+             <Button variant="ghost" className="w-full justify-start gap-2 h-11" asChild>
+                <Link href="/profile/activity">
+                    <Activity />
+                    Activity Log
+                </Link>
             </Button>
             <Button variant="ghost" className="w-full justify-start gap-2 h-11 text-destructive hover:text-destructive" onClick={handleLogout}>
               <LogOut />
