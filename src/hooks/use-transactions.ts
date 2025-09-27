@@ -39,6 +39,8 @@ export function useTransactions() {
       { name: 'exchange_requests', config: { type: 'exchange', amountField: 'hcAmount', currency: 'HC', userIdField: 'userId' } },
       { name: 'referral_bonuses_referrer', config: { type: 'referral', amountField: 'referrerBonus', currency: 'HC', userIdField: 'referrerId' } },
       { name: 'referral_bonuses_referee', config: { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' } },
+      { name: 'buy_requests_buyer', config: { type: 'marketplace-buy', amountField: 'totalPrice', currency: 'USD', userIdField: 'buyerId', statusField: 'status', statusValue: 'approved' } },
+      { name: 'market_listings_seller', config: { type: 'marketplace-sell', amountField: 'totalPrice', currency: 'USD', userIdField: 'sellerId', statusField: 'status', statusValue: 'sold' } },
     ];
 
     let newTransactions: Transaction[] = isInitialLoad ? [] : [...transactions];
@@ -46,15 +48,19 @@ export function useTransactions() {
     let anyMore = false;
 
     const promises = collectionsToQuery.map(async ({ name, config }) => {
-      const collName = name.includes('referral_bonuses') ? 'referral_bonuses' : name;
+      let collName = name;
+      if (name.includes('referral_bonuses')) collName = 'referral_bonuses';
+      if (name.includes('buy_requests')) collName = 'buy_requests';
+      if (name.includes('market_listings')) collName = 'market_listings';
       
-      let q = query(
-        collection(db, collName),
-        where(config.userIdField, '==', user.uid),
-        // NOTE: We cannot use orderBy here as it requires a composite index 
-        // that must be manually created in Firebase. We will sort on the client.
-        limit(TRANSACTIONS_PER_PAGE)
-      );
+      const constraints = [where(config.userIdField, '==', user.uid)];
+      if (config.statusField) {
+        constraints.push(where(config.statusField, '==', config.statusValue));
+      }
+      constraints.push(limit(TRANSACTIONS_PER_PAGE));
+
+
+      let q = query(collection(db, collName), ...constraints);
 
       if (!isInitialLoad && lastDocs[name]) {
         q = query(q, startAfter(lastDocs[name]));
@@ -66,10 +72,14 @@ export function useTransactions() {
         if (snapshot.docs.length > 0) {
           snapshot.forEach(doc => {
             const data = doc.data();
+            const amount = config.type === 'marketplace-sell' 
+              ? data.amount * data.rate 
+              : data[config.amountField];
+
             const transaction: Transaction = {
               id: `${config.type}-${doc.id}`,
               type: config.type,
-              amount: data[config.amountField],
+              amount: amount,
               status: data.status,
               date: formatTimestamp(data.createdAt),
               currency: config.currency,
@@ -86,14 +96,11 @@ export function useTransactions() {
         }
       } catch (error) {
         console.error(`Error fetching from ${collName}:`, error);
-        // This likely means an index is missing if orderBy is used.
-        // We handle this by not using orderBy and sorting on the client.
       }
     });
 
     await Promise.all(promises);
     
-    // Sort all transactions together by date on the client
     newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     setTransactions(newTransactions);
