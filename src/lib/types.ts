@@ -42,6 +42,19 @@ export type AppTask = {
   isActive: boolean;
 };
 
+export type TaskSubmission = {
+    id: string;
+    userId: string;
+    taskId: string;
+    screenshotUrl: string;
+    submissionText: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: any;
+    taskTitle?: string;
+    taskReward?: number;
+};
+
+
 export type MarketListing = {
   id: string;
   sellerId: string;

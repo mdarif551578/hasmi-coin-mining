@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -14,25 +14,46 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckSquare, Plus, Loader2, Check } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckSquare, Plus, Loader2, Edit, Trash2, BadgeHelp, CheckCircle2, XCircle, Image as ImageIcon } from "lucide-react";
 import { useUserData } from "@/hooks/use-user-data";
 import { useTasks } from "@/hooks/use-tasks";
+import { useTaskSubmissions } from "@/hooks/use-task-submissions";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { AppTask, TaskSubmission } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import axios from "axios";
+import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
+
+const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
 export default function TasksPage() {
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
   const { userData, loading: userLoading } = useUserData();
-  const { tasks, completedTaskIds, completeTask, loading: tasksLoading } = useTasks();
+  const { tasks, loading: tasksLoading } = useTasks();
+  const { submissions, createSubmission, updateSubmission, deleteSubmission, loading: submissionsLoading, isSubmitting } = useTaskSubmissions();
+
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  
+  const [isSubmitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<AppTask | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<TaskSubmission | null>(null);
+  
+  const [submissionText, setSubmissionText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
 
   const handleCreateTaskClick = () => {
-    // This logic seems to check a pro status that is not on the user data hook,
-    // assuming 'pro' or higher plans enable this.
     const userPlan = userData?.mining_plan || 'Free';
     if (userPlan !== 'Free') {
-      // Assuming a valid link should be opened.
-      // The FB link seems unrelated, replace with a relevant one if needed.
        window.open("https://www.facebook.com/profile.php?id=61581206455781", "_blank");
     } else {
       setShowUpgradeDialog(true);
@@ -44,21 +65,93 @@ export default function TasksPage() {
     router.push("/mining");
   };
 
-  const [submittingTaskId, setSubmittingTaskId] = useState<string | null>(null);
+  const resetDialog = () => {
+    setSubmissionText("");
+    setFile(null);
+    setFilePreview(null);
+    setSelectedTask(null);
+    setSelectedSubmission(null);
+    setIsUploading(false);
+  }
 
-  const handleGoClick = async (taskId: string, link: string) => {
-    setSubmittingTaskId(taskId);
-    try {
-        window.open(link, '_blank');
-        await completeTask(taskId);
-    } catch(e) {
-        // Error is handled by toast in the hook
-    } finally {
-        setSubmittingTaskId(null);
+  const openSubmitDialog = (task: AppTask) => {
+    resetDialog();
+    setSelectedTask(task);
+    setSubmitDialogOpen(true);
+  }
+
+  const openEditDialog = (submission: TaskSubmission) => {
+      resetDialog();
+      setSelectedSubmission(submission);
+      setSelectedTask(tasks.find(t => t.id === submission.taskId) || null);
+      setSubmissionText(submission.submissionText);
+      setFilePreview(`${API_BASE_URL}${submission.screenshotUrl}`);
+      setSubmitDialogOpen(true);
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    setFile(selectedFile);
+    if (selectedFile) {
+        setFilePreview(URL.createObjectURL(selectedFile));
+    } else {
+        setFilePreview(null);
+    }
+  }
+
+  const handleDialogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTask) return;
+    
+    let finalScreenshotUrl = selectedSubmission?.screenshotUrl;
+
+    if (file) { // New file was selected, upload it
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            finalScreenshotUrl = res.data.url;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload your screenshot.' });
+            setIsUploading(false);
+            return;
+        } finally {
+            setIsUploading(false);
+        }
+    }
+
+    if (!finalScreenshotUrl) {
+        toast({ variant: 'destructive', title: 'Missing Screenshot', description: 'Please select an image to upload.' });
+        return;
+    }
+    
+    if (selectedSubmission) { // This is an update
+        await updateSubmission(selectedSubmission.id, finalScreenshotUrl, submissionText);
+    } else { // This is a new submission
+        await createSubmission(selectedTask.id, finalScreenshotUrl, submissionText);
+    }
+
+    if (!isSubmitting) {
+        setSubmitDialogOpen(false);
+        resetDialog();
     }
   }
   
-  const isLoading = userLoading || tasksLoading;
+  const isLoading = userLoading || tasksLoading || submissionsLoading;
+  
+  const SubmissionStatusIndicator = ({ status }: { status: TaskSubmission['status'] }) => {
+    const statusMap = {
+        pending: { icon: BadgeHelp, text: "Pending Approval", color: "text-amber-500" },
+        approved: { icon: CheckCircle2, text: "Approved", color: "text-green-500" },
+        rejected: { icon: XCircle, text: "Rejected", color: "text-red-500" },
+    };
+    const { icon: Icon, text, color } = statusMap[status];
+    return <div className={cn("flex items-center gap-1.5 text-xs font-medium", color)}><Icon className="size-4" />{text}</div>
+  }
 
   return (
     <>
@@ -75,31 +168,61 @@ export default function TasksPage() {
           {isLoading ? (
             Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-[78px] w-full" />)
           ) : tasks.map((task) => {
-            const isCompleted = completedTaskIds.includes(task.id);
-            const isSubmitting = submittingTaskId === task.id;
-
+            const submission = submissions.find(s => s.taskId === task.id);
             return (
-                <Card
-                key={task.id}
-                className="flex items-center justify-between p-3 rounded-xl"
-                >
-                <div className="flex items-center gap-3">
-                    <CheckSquare className="size-5 text-primary shrink-0" />
-                    <div>
-                    <p className="text-sm">{task.title}</p>
-                    <p className="text-sm text-primary font-bold">
-                        +{task.reward} HC
-                    </p>
+                <Card key={task.id} className="p-4 rounded-xl">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                            <CheckSquare className="size-5 text-primary shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm">{task.title}</p>
+                                <p className="text-sm text-primary font-bold">
+                                    +{task.reward} HC
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
+                             {submission ? (
+                                <>
+                                    <SubmissionStatusIndicator status={submission.status} />
+                                    {submission.status === 'pending' && (
+                                        <div className="flex items-center gap-1">
+                                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => openEditDialog(submission)}>
+                                                <Edit className="size-3 mr-1"/> Edit
+                                            </Button>
+                                             <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                                        <Trash2 className="size-3" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This will permanently delete your submission for this task. This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => deleteSubmission(submission.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <Button 
+                                    size="sm" 
+                                    className="h-8 px-3 text-xs"
+                                    onClick={() => openSubmitDialog(task)}
+                                >
+                                   Submit Proof
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                </div>
-                <Button 
-                    size="sm" 
-                    className="h-8 px-3 text-xs ml-2 w-20"
-                    onClick={() => handleGoClick(task.id, task.link)}
-                    disabled={isCompleted || isSubmitting}
-                >
-                   {isSubmitting ? <Loader2 className="animate-spin"/> : isCompleted ? <Check/> : 'Go'}
-                </Button>
                 </Card>
             );
           })}
@@ -110,6 +233,45 @@ export default function TasksPage() {
            )}
         </div>
       </div>
+
+      <Dialog open={isSubmitDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) resetDialog(); setSubmitDialogOpen(isOpen); }}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>{selectedSubmission ? 'Edit' : 'Submit'} Proof for: {selectedTask?.title}</DialogTitle>
+                  <DialogDescription>
+                      Provide a screenshot and any required text to prove you've completed the task.
+                  </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleDialogSubmit} className="space-y-4 pt-2">
+                 <div className="space-y-2">
+                     <Label>Task Link</Label>
+                      <Button variant="secondary" className="w-full" asChild>
+                        <a href={selectedTask?.link} target="_blank" rel="noopener noreferrer">Visit Task Link</a>
+                      </Button>
+                 </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="screenshot">Screenshot</Label>
+                      <Input id="screenshot" type="file" accept="image/*" onChange={handleFileChange} />
+                      {filePreview && (
+                        <div className="mt-2 rounded-md overflow-hidden border">
+                            <Image src={filePreview} alt="Screenshot preview" width={500} height={300} className="aspect-video w-full object-cover" />
+                        </div>
+                      )}
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="submission-text">Submission Text (Optional)</Label>
+                      <Textarea id="submission-text" placeholder="e.g. Your username, a link, or other proof." value={submissionText} onChange={e => setSubmissionText(e.target.value)} />
+                  </div>
+                  <DialogFooter>
+                      <Button type="button" variant="ghost" onClick={() => setSubmitDialogOpen(false)}>Cancel</Button>
+                      <Button type="submit" disabled={isSubmitting || isUploading}>
+                          {(isSubmitting || isUploading) && <Loader2 className="animate-spin mr-2"/>}
+                          {isUploading ? "Uploading..." : isSubmitting ? "Submitting..." : "Submit for Approval"}
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
         <AlertDialogContent>
