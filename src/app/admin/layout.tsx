@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUserData } from '@/hooks/use-user-data';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -60,6 +60,9 @@ export default function AdminLayout({
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0">
+                    <SheetHeader>
+                      <SheetTitle className="sr-only">Admin Menu</SheetTitle>
+                    </SheetHeader>
                     <AdminNav onLinkClick={() => setOpen(false)}/>
                 </SheetContent>
             </Sheet>
