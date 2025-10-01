@@ -17,12 +17,12 @@ export default function Home() {
     if (!loading) {
       if (user) {
         if (userData?.role === 'admin') {
-          router.push("/admin/dashboard");
+          router.replace("/admin/dashboard");
         } else {
-          router.push("/dashboard");
+          router.replace("/dashboard");
         }
       } else {
-        router.push("/login");
+        router.replace("/login");
       }
     }
   }, [router, user, loading, userData]);
