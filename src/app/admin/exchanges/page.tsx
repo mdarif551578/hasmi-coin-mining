@@ -68,22 +68,22 @@ export default function AdminExchangesPage() {
                   </TableRow>
                 ))
               ) : requests.length === 0 ? (
-                <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                <TableRow className="md:table-row flex-col items-start">
+                    <TableCell colSpan={5} className="h-24 text-center block md:table-cell">
                         No pending exchange requests.
                     </TableCell>
                 </TableRow>
               ) : requests.map(req => (
                 <TableRow key={req.id}>
-                  <TableCell>{req.createdAt ? format(req.createdAt.toDate(), 'PP') : 'N/A'}</TableCell>
-                  <TableCell className="font-mono text-xs">{req.userId}</TableCell>
-                  <TableCell className="font-semibold flex items-center gap-2">
+                  <TableCell data-label="Date">{req.createdAt ? format(req.createdAt.toDate(), 'PP') : 'N/A'}</TableCell>
+                  <TableCell data-label="User ID" className="font-mono text-xs">{req.userId}</TableCell>
+                  <TableCell data-label="Exchange" className="font-semibold flex items-center gap-2">
                     <span>${req.usdAmount.toFixed(2)}</span>
                     <ArrowRight className="size-4 text-muted-foreground" />
                     <span>{req.hcAmount.toLocaleString()} HC</span>
                   </TableCell>
-                  <TableCell>1 USD = {req.rate} HC</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell data-label="Rate">1 USD = {req.rate} HC</TableCell>
+                  <TableCell data-label="Actions" className="text-right">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600" onClick={() => onAction(req.id, 'approved', req)} disabled={actionLoading}>
                         <Check />
                     </Button>

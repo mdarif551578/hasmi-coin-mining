@@ -68,20 +68,20 @@ export default function AdminDepositsPage() {
                   </TableRow>
                 ))
               ) : requests.length === 0 ? (
-                <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                 <TableRow className="md:table-row flex-col items-start">
+                    <TableCell colSpan={7} className="h-24 text-center w-full block md:table-cell">
                         No pending deposit requests.
                     </TableCell>
                 </TableRow>
               ) : requests.map(req => (
                 <TableRow key={req.id}>
-                  <TableCell>{req.createdAt ? format(req.createdAt.toDate(), 'PP') : 'N/A'}</TableCell>
-                  <TableCell className="font-mono text-xs">{req.userId}</TableCell>
-                  <TableCell className="font-semibold">${req.amount.toFixed(2)}</TableCell>
-                  <TableCell><Badge variant="outline" className="capitalize">{req.method}</Badge></TableCell>
-                  <TableCell>{req.phoneNumber}</TableCell>
-                  <TableCell>{req.transactionId}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell data-label="Date">{req.createdAt ? format(req.createdAt.toDate(), 'PP') : 'N/A'}</TableCell>
+                  <TableCell data-label="User ID" className="font-mono text-xs">{req.userId}</TableCell>
+                  <TableCell data-label="Amount" className="font-semibold">${req.amount.toFixed(2)}</TableCell>
+                  <TableCell data-label="Method"><Badge variant="outline" className="capitalize">{req.method}</Badge></TableCell>
+                  <TableCell data-label="Phone">{req.phoneNumber}</TableCell>
+                  <TableCell data-label="Trx ID">{req.transactionId}</TableCell>
+                  <TableCell data-label="Actions" className="text-right">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600" onClick={() => onAction(req.id, 'approved', req.amount)} disabled={actionLoading}>
                         <Check />
                     </Button>

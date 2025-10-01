@@ -60,14 +60,14 @@ export default function AdminUsersPage() {
                 ))
               ) : users.map(user => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.displayName}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{(user.wallet_balance || 0).toLocaleString()}</TableCell>
-                  <TableCell>${(user.usd_balance || 0).toFixed(2)}</TableCell>
-                  <TableCell>
+                  <TableCell data-label="Name" className="font-medium">{user.displayName}</TableCell>
+                  <TableCell data-label="Email">{user.email}</TableCell>
+                  <TableCell data-label="HC Balance">{(user.wallet_balance || 0).toLocaleString()}</TableCell>
+                  <TableCell data-label="USD Balance">${(user.usd_balance || 0).toFixed(2)}</TableCell>
+                  <TableCell data-label="Role">
                     <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
                   </TableCell>
-                  <TableCell>{user.createdAt ? format(user.createdAt.toDate(), 'PPp') : 'N/A'}</TableCell>
+                  <TableCell data-label="Joined">{user.createdAt ? format(user.createdAt.toDate(), 'PPp') : 'N/A'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

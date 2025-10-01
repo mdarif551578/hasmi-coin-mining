@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -20,7 +21,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  <thead ref={ref} className={cn("[&_tr]:border-b", "hidden md:table-header-group", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -30,7 +31,7 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
+    className={cn("[&_tr:last-child]:border-0", "flex flex-col gap-4 md:table-row-group", className)}
     {...props}
   />
 ))
@@ -59,6 +60,7 @@ const TableRow = React.forwardRef<
     ref={ref}
     className={cn(
       "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "flex flex-col p-4 rounded-lg border bg-card shadow-sm md:table-row md:p-0 md:border-b md:rounded-none md:bg-transparent md:shadow-none",
       className
     )}
     {...props}
@@ -83,11 +85,14 @@ TableHead.displayName = "TableHead"
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
+  React.TdHTMLAttributes<HTMLTableCellElement> & { "data-label"?: string }
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-2 md:p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+    className={cn("p-2 md:p-4 align-middle [&:has([role=checkbox])]:pr-0", 
+    "flex items-center justify-between border-b md:table-cell md:border-none",
+    "before:content-[attr(data-label)] before:font-bold before:text-muted-foreground md:before:content-none",
+    className)}
     {...props}
   />
 ))

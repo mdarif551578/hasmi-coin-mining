@@ -69,15 +69,15 @@ export default function AdminMarketplacePage() {
                             {loading && pendingListings.length === 0 ? (
                                 <TableRow><TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : pendingListings.length === 0 ? (
-                                <TableRow><TableCell colSpan={6} className="h-24 text-center">No pending sell offers.</TableCell></TableRow>
+                                <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={6} className="h-24 text-center block md:table-cell">No pending sell offers.</TableCell></TableRow>
                             ) : pendingListings.map(listing => (
                                 <TableRow key={listing.id}>
-                                    <TableCell>{format(listing.createdAt.toDate(), 'PP')}</TableCell>
-                                    <TableCell className="font-mono text-xs">{listing.sellerId}</TableCell>
-                                    <TableCell>{listing.amount.toLocaleString()} HC</TableCell>
-                                    <TableCell>${listing.rate.toFixed(3)}</TableCell>
-                                    <TableCell>${(listing.amount * listing.rate).toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell data-label="Date">{format(listing.createdAt.toDate(), 'PP')}</TableCell>
+                                    <TableCell data-label="Seller ID" className="font-mono text-xs">{listing.sellerId}</TableCell>
+                                    <TableCell data-label="Amount">{listing.amount.toLocaleString()} HC</TableCell>
+                                    <TableCell data-label="Rate">${listing.rate.toFixed(3)}</TableCell>
+                                    <TableCell data-label="Total">${(listing.amount * listing.rate).toFixed(2)}</TableCell>
+                                    <TableCell data-label="Actions" className="text-right">
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500" onClick={() => handleMarketListing(listing.id, 'open')} disabled={actionLoading}><Check /></Button>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleMarketListing(listing.id, 'rejected')} disabled={actionLoading}><X /></Button>
                                     </TableCell>
@@ -109,16 +109,16 @@ export default function AdminMarketplacePage() {
                             {loading && pendingBuyRequests.length === 0 ? (
                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : pendingBuyRequests.length === 0 ? (
-                                <TableRow><TableCell colSpan={5} className="h-24 text-center">No pending buy requests.</TableCell></TableRow>
+                                <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={5} className="h-24 text-center block md:table-cell">No pending buy requests.</TableCell></TableRow>
                             ) : pendingBuyRequests.map(req => (
                                 <TableRow key={req.id}>
-                                    <TableCell>{format(req.createdAt.toDate(), 'PP')}</TableCell>
-                                    <TableCell className="font-mono text-xs">{req.buyerId}</TableCell>
-                                    <TableCell className="font-mono text-xs">{req.sellerId}</TableCell>
-                                    <TableCell>
+                                    <TableCell data-label="Date">{format(req.createdAt.toDate(), 'PP')}</TableCell>
+                                    <TableCell data-label="Buyer ID" className="font-mono text-xs">{req.buyerId}</TableCell>
+                                    <TableCell data-label="Seller ID" className="font-mono text-xs">{req.sellerId}</TableCell>
+                                    <TableCell data-label="Amount">
                                         {req.amount.toLocaleString()} HC for ${req.totalPrice.toFixed(2)}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell data-label="Actions" className="text-right">
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500" onClick={() => handleBuyRequest(req, 'approved')} disabled={actionLoading}><Check /></Button>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleBuyRequest(req, 'rejected')} disabled={actionLoading}><X /></Button>
                                     </TableCell>

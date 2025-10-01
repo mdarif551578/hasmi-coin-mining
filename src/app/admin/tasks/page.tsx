@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, DocumentData, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, DocumentData, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -160,21 +160,21 @@ export default function AdminTasksPage() {
                         {loading && submissions.length === 0 ? (
                             <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : submissions.length === 0 ? (
-                            <TableRow><TableCell colSpan={5} className="h-24 text-center">No pending submissions.</TableCell></TableRow>
+                            <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={5} className="h-24 text-center block md:table-cell">No pending submissions.</TableCell></TableRow>
                         ) : submissions.map(sub => (
                             <TableRow key={sub.id}>
-                            <TableCell>
+                            <TableCell data-label="User">
                                 <div>{sub.user?.displayName}</div>
                                 <div className="text-xs text-muted-foreground">{sub.user?.email}</div>
                             </TableCell>
-                            <TableCell className="font-mono text-xs">{sub.taskId}</TableCell>
-                            <TableCell className="max-w-xs truncate">{sub.submissionText}</TableCell>
-                            <TableCell>
+                            <TableCell data-label="Task ID" className="font-mono text-xs">{sub.taskId}</TableCell>
+                            <TableCell data-label="Submission Text" className="max-w-xs truncate">{sub.submissionText}</TableCell>
+                            <TableCell data-label="Screenshot">
                                 <a href={`${API_BASE_URL}${sub.screenshotUrl}`} target="_blank" rel="noopener noreferrer">
                                 <Image src={`${API_BASE_URL}${sub.screenshotUrl}`} alt="Screenshot" width={80} height={45} className="rounded-md object-cover" />
                                 </a>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell data-label="Actions" className="text-right">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500" onClick={() => handleTaskSubmission(sub.id, 'approved')} disabled={actionLoading}><Check /></Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleTaskSubmission(sub.id, 'rejected')} disabled={actionLoading}><X /></Button>
                             </TableCell>
@@ -203,10 +203,10 @@ export default function AdminTasksPage() {
                            <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : tasks.map(task => (
                             <TableRow key={task.id}>
-                            <TableCell>{task.title}</TableCell>
-                            <TableCell>{task.reward} HC</TableCell>
-                            <TableCell><a href={task.link} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline">Link <ExternalLink className="h-3 w-3" /></a></TableCell>
-                            <TableCell>{task.isActive ? 'Active' : 'Inactive'}</TableCell>
+                            <TableCell data-label="Title">{task.title}</TableCell>
+                            <TableCell data-label="Reward">{task.reward} HC</TableCell>
+                            <TableCell data-label="Link"><a href={task.link} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline">Link <ExternalLink className="h-3 w-3" /></a></TableCell>
+                            <TableCell data-label="Status">{task.isActive ? 'Active' : 'Inactive'}</TableCell>
                             </TableRow>
                         ))}
                         </TableBody>
