@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, DocumentData, doc, getDoc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, DocumentData, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,7 +47,8 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     const tasksQuery = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
-    const submissionsQuery = query(collection(db, 'task_submissions'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+    // Fetch all submissions and filter client-side to avoid index requirement.
+    const submissionsQuery = query(collection(db, 'task_submissions'), orderBy('createdAt', 'desc'));
 
     const unsubTasks = onSnapshot(tasksQuery, async (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppTask)));
@@ -57,15 +58,18 @@ export default function AdminTasksPage() {
     const unsubSubmissions = onSnapshot(submissionsQuery, async (snapshot) => {
         const subs: TaskSubmission[] = [];
         for (const docSnap of snapshot.docs) {
-            const sub = { id: docSnap.id, ...docSnap.data() } as TaskSubmission;
-            const userDoc = await getDoc(doc(db, 'users', sub.userId));
-            if(userDoc.exists()) {
-                sub.user = {
-                    displayName: userDoc.data().displayName,
-                    email: userDoc.data().email
+            const subData = docSnap.data();
+            if (subData.status === 'pending') {
+                const sub = { id: docSnap.id, ...subData } as TaskSubmission;
+                const userDoc = await getDoc(doc(db, 'users', sub.userId));
+                if(userDoc.exists()) {
+                    sub.user = {
+                        displayName: userDoc.data().displayName,
+                        email: userDoc.data().email
+                    }
                 }
+                subs.push(sub);
             }
-            subs.push(sub);
         }
         setSubmissions(subs);
         setLoading(false);
