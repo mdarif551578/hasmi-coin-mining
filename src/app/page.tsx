@@ -4,21 +4,28 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useUserData } from "@/hooks/use-user-data";
 
 export default function Home() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { userData, loading: userLoading } = useUserData();
+
+  const loading = authLoading || userLoading;
 
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push("/dashboard");
+        if (userData?.role === 'admin') {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         router.push("/login");
       }
     }
-    // Only run this effect when loading changes
-  }, [router, user, loading]);
+  }, [router, user, loading, userData]);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-background p-4 text-center">

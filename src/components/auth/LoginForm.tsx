@@ -17,11 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { Separator } from "../ui/separator";
+import { doc, getDoc } from "firebase/firestore";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -48,17 +48,25 @@ export function LoginForm() {
     setError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
       
-      if (!userCredential.user.emailVerified) {
+      if (!user.emailVerified) {
         setError("Please verify your email before signing in. Check your inbox and spam folder for the verification link.");
-        // Optionally re-send verification email, but be careful with spamming.
-        // await sendEmailVerification(userCredential.user); 
-        await auth.signOut(); // Sign the user out as they are not verified
+        await auth.signOut();
         setIsLoading(false);
         return;
       }
+      
+      // Check user role
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
 
-      router.push('/dashboard');
+      if (userDoc.exists() && userDoc.data().role === 'admin') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+
     } catch (err: any) {
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
         setError("Invalid credentials. Please check your email and password.");

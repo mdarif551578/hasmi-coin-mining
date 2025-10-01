@@ -1,9 +1,12 @@
 
+
+import { Timestamp } from "firebase/firestore";
+
 export type Transaction = {
   id: string;
   type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward' | 'exchange';
   amount: number;
-  status: 'pending' | 'completed' | 'failed' | 'approved' | 'rejected';
+  status: 'pending' | 'completed' | 'failed' | 'approved' | 'rejected' | 'sold';
   date: string;
   currency?: 'USD' | 'HC';
 };
@@ -40,6 +43,7 @@ export type AppTask = {
   reward: number;
   link: string;
   isActive: boolean;
+  createdAt: Timestamp;
 };
 
 export type TaskSubmission = {
@@ -52,6 +56,10 @@ export type TaskSubmission = {
     createdAt: any;
     taskTitle?: string;
     taskReward?: number;
+    user?: {
+      displayName: string;
+      email: string;
+    }
 };
 
 
@@ -63,6 +71,7 @@ export type MarketListing = {
   rate: number; // USD per HC
   status: 'pending' | 'open' | 'sold' | 'cancelled';
   createdAt: any;
+  totalPrice?: number;
 };
 
 export type BuyRequest = {
@@ -96,6 +105,7 @@ export type WithdrawalRequest = {
   accountInfo: string;
   status: 'pending' | 'approved' | 'rejected';
   date: string;
+  createdAt?: any;
 };
 
 export type ExchangeRequest = {
@@ -114,6 +124,7 @@ export type Message = {
     senderId: string; // 'admin' or user's UID
     timestamp: any;
     isRead: boolean;
+    userId?: string;
 }
 
 export type ReferralBonus = {
