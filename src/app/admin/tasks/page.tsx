@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
 import { Check, X, Plus, ExternalLink } from 'lucide-react';
 import type { AppTask, TaskSubmission } from '@/lib/types';
@@ -122,7 +121,7 @@ export default function AdminTasksPage() {
                 {errors.link && <p className="text-red-500 text-sm">{errors.link.message}</p>}
               </div>
               <div className="flex items-center space-x-2">
-                <input type="checkbox" id="isActive" {...register('isActive')} className="h-4 w-4" />
+                <input type="checkbox" id="isActive" {...register('isActive')} className="h-4 w-4" defaultChecked/>
                 <Label htmlFor="isActive">Is Active</Label>
               </div>
               <DialogFooter>

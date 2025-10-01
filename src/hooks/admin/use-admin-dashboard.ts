@@ -46,20 +46,33 @@ export function useAdminDashboard() {
       }
     };
 
+    // Initial fetch
     fetchCounts();
 
-    // Setup listeners for real-time updates
-    const unsubscribes = [
-      onSnapshot(query(collection(db, 'deposits'), where('status', '==', 'pending')), () => fetchCounts()),
-      onSnapshot(query(collection(db, 'withdrawals'), where('status', '==', 'pending')), () => fetchCounts()),
-      onSnapshot(query(collection(db, 'exchange_requests'), where('status', '==', 'pending')), () => fetchCounts()),
-      onSnapshot(query(collection(db, 'market_listings'), where('status', '==', 'pending')), () => fetchCounts()),
-      onSnapshot(query(collection(db, 'buy_requests'), where('status', '==', 'pending')), () => fetchCounts()),
-      onSnapshot(query(collection(db, 'task_submissions'), where('status', '==', 'pending')), () => fetchCounts()),
-      onSnapshot(collection(db, 'users'), () => fetchCounts()),
+    // Setup listeners for real-time updates on pending counts
+    const createListener = (collectionName: string, stateKey: keyof typeof counts) => {
+      const q = query(collection(db, collectionName), where('status', '==', 'pending'));
+      return onSnapshot(q, (snapshot) => {
+        setCounts(prev => ({ ...prev, [stateKey]: snapshot.size }));
+      });
+    };
+    
+    const unsubs = [
+      createListener('deposits', 'pendingDeposits'),
+      createListener('withdrawals', 'pendingWithdrawals'),
+      createListener('exchange_requests', 'pendingExchanges'),
+      createListener('market_listings', 'pendingListings'),
+      createListener('buy_requests', 'pendingBuyRequests'),
+      createListener('task_submissions', 'pendingTaskSubmissions'),
+      // For total users, a full recount is still best
+      onSnapshot(collection(db, 'users'), () => {
+         getCountFromServer(collection(db, 'users')).then(snap => {
+           setCounts(prev => ({ ...prev, totalUsers: snap.data().count }));
+         })
+      }),
     ];
 
-    return () => unsubscribes.forEach(unsub => unsub());
+    return () => unsubs.forEach(unsub => unsub());
 
   }, []);
 

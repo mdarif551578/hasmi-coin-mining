@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, runTransaction, writeBatch, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, runTransaction, writeBatch, getDoc, collection, query, where, getDocs, increment } from 'firebase/firestore';
 import { useToast } from '../use-toast';
 import type { BuyRequest, MarketListing } from '@/lib/types';
 
@@ -84,7 +84,6 @@ export function useAdminActions() {
 
                 if (action === 'rejected') {
                     transaction.update(requestRef, { status: 'rejected' });
-                    // No balance changes needed
                 } else { // Approved
                     const sellerData = sellerDoc.data();
                     const buyerData = buyerDoc.data();
@@ -98,12 +97,12 @@ export function useAdminActions() {
 
                     // Update balances
                     transaction.update(buyerRef, { 
-                        usd_balance: buyerData.usd_balance - request.totalPrice,
-                        wallet_balance: buyerData.wallet_balance + request.amount
+                        usd_balance: increment(-request.totalPrice),
+                        wallet_balance: increment(request.amount)
                     });
                     transaction.update(sellerRef, {
-                        usd_balance: sellerData.usd_balance + request.totalPrice,
-                        wallet_balance: sellerData.wallet_balance - request.amount
+                        usd_balance: increment(request.totalPrice),
+                        wallet_balance: increment(-request.amount)
                     });
 
                     // Update statuses
@@ -142,9 +141,7 @@ export function useAdminActions() {
                     if (!userDoc.exists()) throw new Error("User not found.");
 
                     const reward = taskDoc.data().reward;
-                    const newBalance = userDoc.data().wallet_balance + reward;
-                    
-                    transaction.update(userRef, { wallet_balance: newBalance });
+                    transaction.update(userRef, { wallet_balance: increment(reward) });
                 }
              });
 

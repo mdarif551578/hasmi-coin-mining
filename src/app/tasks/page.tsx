@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckSquare, Plus, Loader2, Edit, Trash2, BadgeHelp, CheckCircle2, XCircle, Image as ImageIcon } from "lucide-react";
+import { CheckSquare, Loader2, Edit, Trash2, BadgeHelp, CheckCircle2, XCircle } from "lucide-react";
 import { useUserData } from "@/hooks/use-user-data";
 import { useTasks } from "@/hooks/use-tasks";
 import { useTaskSubmissions } from "@/hooks/use-task-submissions";
@@ -33,14 +33,11 @@ import { useToast } from "@/hooks/use-toast";
 const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
 export default function TasksPage() {
-  const router = useRouter();
   const { toast } = useToast();
-  const { userData, loading: userLoading } = useUserData();
+  const { loading: userLoading } = useUserData();
   const { tasks, loading: tasksLoading } = useTasks();
   const { submissions, createSubmission, updateSubmission, deleteSubmission, loading: submissionsLoading, isSubmitting } = useTaskSubmissions();
 
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  
   const [isSubmitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<AppTask | null>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<TaskSubmission | null>(null);
@@ -49,21 +46,6 @@ export default function TasksPage() {
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-
-  const handleCreateTaskClick = () => {
-    const userPlan = userData?.mining_plan || 'Free';
-    if (userPlan !== 'Free') {
-       window.open("https://www.facebook.com/profile.php?id=61581206455781", "_blank");
-    } else {
-      setShowUpgradeDialog(true);
-    }
-  };
-
-  const handleUpgrade = () => {
-    setShowUpgradeDialog(false);
-    router.push("/mining");
-  };
 
   const resetDialog = () => {
     setSubmissionText("");
@@ -85,7 +67,9 @@ export default function TasksPage() {
       setSelectedSubmission(submission);
       setSelectedTask(tasks.find(t => t.id === submission.taskId) || null);
       setSubmissionText(submission.submissionText);
-      setFilePreview(`${API_BASE_URL}${submission.screenshotUrl}`);
+      if (submission.screenshotUrl) {
+        setFilePreview(`${API_BASE_URL}${submission.screenshotUrl}`);
+      }
       setSubmitDialogOpen(true);
   }
 
@@ -158,10 +142,6 @@ export default function TasksPage() {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-4">
           <h1 className="text-xl font-bold">Tasks & Earn</h1>
-          <Button size="sm" onClick={handleCreateTaskClick} disabled={isLoading}>
-            <Plus className="mr-2" />
-            Create Task
-          </Button>
         </div>
         
         <div className="space-y-3">
@@ -272,22 +252,6 @@ export default function TasksPage() {
               </form>
           </DialogContent>
       </Dialog>
-
-      <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Upgrade Your Plan</AlertDialogTitle>
-            <AlertDialogDescription>
-              To create your own tasks, you need to upgrade from the Free plan. 
-              Unlock this feature and more by upgrading your account in the Mining Center.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleUpgrade}>Upgrade</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
