@@ -1,4 +1,4 @@
-import type { Transaction, MiningPlan, NftPlan, User, Task, MarketListing, WithdrawalRequest } from './types';
+import type { Transaction, MiningPlan, NftPlan, User, MarketListing, WithdrawalRequest, AppTask } from './types';
 
 export const user: User = {
     name: "Hasmi",
@@ -38,11 +38,11 @@ export const nftPlans: NftPlan[] = [
     { id: 'n3', name: 'Gold NFT', cost: 100, profit: 200, duration: '60 days' },
 ];
 
-export const tasks: Task[] = [
-  { id: 1, description: "Follow us on Twitter", reward: 5 },
-  { id: 2, description: "Join our Telegram channel", reward: 5 },
-  { id: 3, description: "Watch a tutorial video", reward: 2 },
-  { id: 4, description: "Download our partner app", reward: 10 },
+export const tasks: AppTask[] = [
+  { id: '1', title: "Follow us on Twitter", reward: 5, link: '#', isActive: true },
+  { id: '2', title: "Join our Telegram channel", reward: 5, link: '#', isActive: true },
+  { id: '3', title: "Watch a tutorial video", reward: 2, link: '#', isActive: true },
+  { id: '4', title: "Download our partner app", reward: 10, link: '#', isActive: true },
 ];
 
 export const marketListings: MarketListing[] = [

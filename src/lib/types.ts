@@ -1,5 +1,4 @@
 
-
 export type Transaction = {
   id: string;
   type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward' | 'exchange';
@@ -35,10 +34,12 @@ export type User = {
     isPro: boolean;
 }
 
-export type Task = {
-  id: number;
-  description: string;
+export type AppTask = {
+  id: string;
+  title: string;
   reward: number;
+  link: string;
+  isActive: boolean;
 };
 
 export type MarketListing = {
