@@ -24,7 +24,10 @@ export default function AdminLayout({
   const loading = authLoading || userLoading;
 
   useEffect(() => {
+    // Only run the effect if loading is complete
     if (!loading) {
+      // If there's no user OR the user is not an admin, redirect to login.
+      // This handles the case where a non-admin tries to access /admin URLs.
       if (!user || userData?.role !== 'admin') {
         router.push('/login');
       }
@@ -37,6 +40,8 @@ export default function AdminLayout({
     }
   }, [isMobile]);
 
+  // While loading, or if the user is not yet confirmed as an admin, show a loading screen.
+  // This prevents the flicker of content and ensures all data is present before rendering.
   if (loading || !user || userData?.role !== 'admin') {
     return (
        <div className="flex items-center justify-center h-screen bg-background">
@@ -45,6 +50,7 @@ export default function AdminLayout({
     );
   }
 
+  // If loading is complete and user is an admin, render the layout
   return (
     <div className="flex min-h-screen">
       <aside className="w-64 flex-shrink-0 border-r bg-background hidden md:flex flex-col">
