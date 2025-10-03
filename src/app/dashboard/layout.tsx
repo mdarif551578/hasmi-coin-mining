@@ -4,22 +4,35 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { BottomNavBar } from '@/components/BottomNavBar';
+import { useUserData } from '@/hooks/use-user-data';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { userData, loading: userLoading } = useUserData();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
+  const loading = authLoading || userLoading;
 
-  if (loading || !user) {
+  useEffect(() => {
+    // Wait for all data to load before making a decision.
+    if (!loading) {
+      if (!user) {
+        // If no user, send to login.
+        router.replace('/login');
+      } else if (userData?.role === 'admin') {
+        // If user is an admin, they should not be here. Redirect to admin dashboard.
+        router.replace('/admin/dashboard');
+      }
+    }
+  }, [user, userData, loading, router]);
+
+  // Show loading screen while verifying auth, user data, and role.
+  // This prevents an admin from briefly seeing the user UI before being redirected.
+  if (loading || !user || userData?.role === 'admin') {
     return (
        <div className="flex items-center justify-center h-screen bg-background">
           <div className="animate-pulse flex flex-col items-center gap-4">
@@ -49,6 +62,7 @@ export default function DashboardLayout({
     );
   }
 
+  // Only render the user dashboard if all checks pass and the user is NOT an admin.
   return (
     <div className="relative flex flex-col min-h-screen">
       <main className="flex-1 pb-20">{children}</main>

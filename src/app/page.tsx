@@ -14,18 +14,21 @@ export default function Home() {
   const loading = authLoading || userLoading;
 
   useEffect(() => {
+    // Only perform redirection once all loading is complete.
     if (!loading) {
       if (user) {
+        // If we have a user, check their role and redirect accordingly.
         if (userData?.role === 'admin') {
           router.replace("/admin/dashboard");
         } else {
           router.replace("/dashboard");
         }
       } else {
+        // If there's no user after loading, they need to log in.
         router.replace("/login");
       }
     }
-  }, [router, user, loading, userData]);
+  }, [router, user, userData, loading]);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-background p-4 text-center">

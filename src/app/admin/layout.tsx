@@ -24,12 +24,12 @@ export default function AdminLayout({
   const loading = authLoading || userLoading;
 
   useEffect(() => {
-    // Only run the effect if loading is complete
+    // Wait until loading is fully complete before making any decisions
     if (!loading) {
-      // If there's no user OR the user is not an admin, redirect to login.
-      // This handles the case where a non-admin tries to access /admin URLs.
-      if (!user || userData?.role !== 'admin') {
-        router.push('/login');
+      // If there is no user, or if the user data is loaded and they are NOT an admin,
+      // redirect them to the login page.
+      if (!user || (userData && userData.role !== 'admin')) {
+        router.replace('/login');
       }
     }
   }, [user, userData, loading, router]);
@@ -40,9 +40,9 @@ export default function AdminLayout({
     }
   }, [isMobile]);
 
-  // While loading, or if the user is not yet confirmed as an admin, show a loading screen.
-  // This prevents the flicker of content and ensures all data is present before rendering.
-  if (loading || !user || userData?.role !== 'admin') {
+  // While loading, or if the user's admin status hasn't been confirmed yet,
+  // show a dedicated loading screen. This prevents content flicker and premature redirects.
+  if (loading || !userData || userData.role !== 'admin') {
     return (
        <div className="flex items-center justify-center h-screen bg-background">
           <p className="text-sm text-muted-foreground">Loading Admin Panel...</p>
@@ -50,7 +50,7 @@ export default function AdminLayout({
     );
   }
 
-  // If loading is complete and user is an admin, render the layout
+  // If loading is complete and user is confirmed as an admin, render the layout
   return (
     <div className="flex min-h-screen">
       <aside className="w-64 flex-shrink-0 border-r bg-background hidden md:flex flex-col">
