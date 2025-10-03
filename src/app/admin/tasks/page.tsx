@@ -33,7 +33,6 @@ const taskSchema = z.object({
   reward: z.coerce.number().min(0, 'Reward must be non-negative'),
   link: z.string().url('Must be a valid URL'),
   isActive: z.boolean(),
-  images: z.any().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -79,13 +78,35 @@ export default function AdminTasksPage() {
     defaultValues: { isActive: true },
   });
 
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+          const filesArray = Array.from(e.target.files);
+          setImageFiles(prev => [...prev, ...filesArray]);
+
+          const newPreviews = filesArray.map(file => URL.createObjectURL(file));
+          setImagePreviews(prev => [...prev, ...newPreviews]);
+      }
+      e.target.value = ''; // Reset input to allow selecting same file again
+  };
+
+  const removeImage = (index: number) => {
+      setImageFiles(prev => prev.filter((_, i) => i !== index));
+      setImagePreviews(prev => {
+          const newPreviews = prev.filter((_, i) => i !== index);
+          // Revoke the object URL to free up memory
+          URL.revokeObjectURL(prev[index]);
+          return newPreviews;
+      });
+  };
   
   const onTaskSubmit: SubmitHandler<TaskFormValues> = async (data) => {
     const imageUrls: string[] = [];
-    const imageFiles = data.images;
 
-    if (imageFiles && imageFiles.length > 0) {
+    if (imageFiles.length > 0) {
         setIsUploading(true);
         for (const file of imageFiles) {
             const formData = new FormData();
@@ -116,6 +137,8 @@ export default function AdminTasksPage() {
       });
       toast({ title: 'Success', description: 'New task has been created.' });
       reset();
+      setImageFiles([]);
+      setImagePreviews([]);
       setDialogOpen(false);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to create task.' });
@@ -148,8 +171,25 @@ export default function AdminTasksPage() {
               </div>
                <div>
                 <Label htmlFor="images">Task Images</Label>
-                <Input id="images" type="file" accept="image/*" {...register('images')} multiple />
-                {errors.images && <p className="text-red-500 text-sm">{errors.images.message as string}</p>}
+                <Input id="images" type="file" accept="image/*" onChange={handleFileChange} multiple />
+                 {imagePreviews.length > 0 && (
+                    <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                        {imagePreviews.map((preview, index) => (
+                            <div key={index} className="relative aspect-square">
+                                <Image src={preview} alt={`Preview ${index}`} layout="fill" className="rounded-md object-cover"/>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                    onClick={() => removeImage(index)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                   <div>

@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckSquare, Loader2, Edit, Trash2, BadgeHelp, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { CheckSquare, Loader2, Edit, Trash2, BadgeHelp, CheckCircle2, XCircle, ExternalLink, X } from "lucide-react";
 import { useUserData } from "@/hooks/use-user-data";
 import { useTasks } from "@/hooks/use-tasks";
 import { useTaskSubmissions } from "@/hooks/use-task-submissions";
@@ -51,13 +51,13 @@ export default function TasksPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<TaskSubmission | null>(null);
   
   const [submissionText, setSubmissionText] = useState("");
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const resetDialog = () => {
     setSubmissionText("");
-    setFiles(null);
+    setFiles([]);
     setFilePreviews([]);
     setSelectedTask(null);
     setSelectedSubmission(null);
@@ -82,26 +82,46 @@ export default function TasksPage() {
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    setFiles(selectedFiles);
-    if (selectedFiles) {
-        const previews = Array.from(selectedFiles).map(file => URL.createObjectURL(file));
-        setFilePreviews(previews);
-    } else {
-        setFilePreviews([]);
+    if (e.target.files) {
+        const newFiles = Array.from(e.target.files);
+        setFiles(prev => [...prev, ...newFiles]);
+
+        const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+        setFilePreviews(prev => [...prev, ...newPreviews]);
     }
+    e.target.value = '';
   }
+
+  const removeImage = (index: number) => {
+      // For new local files
+      const newLocalFiles = files.filter((_, i) => i !== index);
+      const newLocalPreviews = filePreviews.filter((p) => !p.startsWith('blob:')).concat(
+          newLocalFiles.map(f => URL.createObjectURL(f))
+      )
+      
+      // For existing remote files (in edit mode)
+      const newRemotePreviews = filePreviews.filter((p, i) => i !== index && p.startsWith('http'));
+      
+      setFiles(newLocalFiles);
+      setFilePreviews(newRemotePreviews);
+  };
+
 
   const handleDialogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask) return;
     
+    // Start with existing URLs if in edit mode
     let finalScreenshotUrls: string[] = selectedSubmission?.screenshotUrls?.map(url => url.replace(API_BASE_URL, '')) || [];
 
-    if (files && files.length > 0) { // New files were selected, upload them
+    if (files.length > 0) { // New files were selected, upload them
         setIsUploading(true);
-        finalScreenshotUrls = []; // Reset if new files are being uploaded
-        for (const file of Array.from(files)) {
+        // On update, if new files are added, we might want to replace or add to existing.
+        // For simplicity, this implementation replaces all with the new set if any new file is added.
+        if (selectedSubmission) {
+            finalScreenshotUrls = [];
+        }
+        for (const file of files) {
             const formData = new FormData();
             formData.append("file", file);
 
@@ -118,8 +138,8 @@ export default function TasksPage() {
         }
         setIsUploading(false);
     }
-
-    if (finalScreenshotUrls.length === 0) {
+    
+    if (finalScreenshotUrls.length === 0 && files.length === 0) {
         toast({ variant: 'destructive', title: 'Missing Screenshot', description: 'Please select at least one image to upload.' });
         return;
     }
@@ -259,15 +279,24 @@ export default function TasksPage() {
                   <div className="space-y-2">
                       <Label htmlFor="screenshots">Screenshots</Label>
                       <Input id="screenshots" type="file" accept="image/*" onChange={handleFileChange} multiple />
-                      {filePreviews.length > 0 && (
-                        <div className="mt-2 grid grid-cols-3 gap-2">
-                            {filePreviews.map((previewUrl, index) => (
-                                <div key={index} className="rounded-md overflow-hidden border aspect-video relative">
-                                    <Image src={previewUrl} alt={`Screenshot preview ${index + 1}`} layout="fill" className="object-cover" />
-                                </div>
-                            ))}
-                        </div>
-                      )}
+                        {filePreviews.length > 0 && (
+                            <div className="mt-2 grid grid-cols-3 gap-2">
+                                {filePreviews.map((previewUrl, index) => (
+                                    <div key={index} className="relative aspect-video">
+                                        <Image src={previewUrl} alt={`Screenshot preview ${index + 1}`} layout="fill" className="rounded-md object-cover" />
+                                         <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                            onClick={() => removeImage(index)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                   </div>
                   <div className="space-y-2">
                       <Label htmlFor="submission-text">Submission Text (Optional)</Label>
