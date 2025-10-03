@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, orderBy, DocumentData } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,11 +18,14 @@ export default function AdminExchangesPage() {
   const { loading: actionLoading, handleRequest } = useAdminActions();
 
   useEffect(() => {
-    const q = query(collection(db, 'exchange_requests'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'exchange_requests'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedRequests: DocumentData[] = [];
       snapshot.forEach(doc => {
-        fetchedRequests.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        if (data.status === 'pending') {
+          fetchedRequests.push({ id: doc.id, ...data });
+        }
       });
       setRequests(fetchedRequests);
       setLoading(false);
