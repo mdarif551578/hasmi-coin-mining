@@ -1,9 +1,9 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, DocumentData, doc, getDoc } from 'firebase/firestore';
+import React, { useState, useEffect, useMemo } from 'react';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +20,7 @@ import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
+import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
 
 const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
@@ -32,55 +33,47 @@ const taskSchema = z.object({
 
 type TaskFormValues = z.infer<typeof taskSchema>;
 
+const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loading }: { canPrev: boolean, canNext: boolean, currentPage: number, onPrev: () => void, onNext: () => void, loading: boolean }) => (
+    <div className="flex items-center justify-end space-x-2 py-4">
+        <span className="text-sm text-muted-foreground">Page {currentPage}</span>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrev}
+            disabled={!canPrev || loading}
+        >
+            Previous
+        </Button>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onNext}
+            disabled={!canNext || loading}
+        >
+            Next
+        </Button>
+    </div>
+);
+
 export default function AdminTasksPage() {
-  const [tasks, setTasks] = useState<AppTask[]>([]);
-  const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { loading: actionLoading, handleTaskSubmission } = useAdminActions();
   const { toast } = useToast();
   const [isDialogOpen, setDialogOpen] = useState(false);
 
+  const tasksQueryConstraints = useMemo(() => [orderBy('createdAt', 'desc')], []);
+  const submissionsQueryConstraints = useMemo(() => [orderBy('createdAt', 'desc')], []);
+
+  const { data: tasks, loading: tasksLoading, nextPage: nextTasks, prevPage: prevTasks, currentPage: tasksCurrentPage, canNext: canNextTasks, canPrev: canPrevTasks } = useAdminPagination('tasks', tasksQueryConstraints);
+  const { data, loading: submissionsLoading, nextPage: nextSubs, prevPage: prevSubs, currentPage: subsCurrentPage, canNext: canNextSubs, canPrev: canPrevSubs } = useAdminPagination('task_submissions', submissionsQueryConstraints);
+
+  const submissions = data.filter(sub => sub.status === 'pending');
+
+  const { loading: actionLoading, handleTaskSubmission } = useAdminActions();
+  
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: { isActive: true },
   });
-
-  useEffect(() => {
-    const tasksQuery = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
-    // Fetch all submissions and filter client-side to avoid index requirement.
-    const submissionsQuery = query(collection(db, 'task_submissions'), orderBy('createdAt', 'desc'));
-
-    const unsubTasks = onSnapshot(tasksQuery, async (snapshot) => {
-      setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppTask)));
-      setLoading(false);
-    });
-
-    const unsubSubmissions = onSnapshot(submissionsQuery, async (snapshot) => {
-        const subs: TaskSubmission[] = [];
-        for (const docSnap of snapshot.docs) {
-            const subData = docSnap.data();
-            if (subData.status === 'pending') {
-                const sub = { id: docSnap.id, ...subData } as TaskSubmission;
-                const userDoc = await getDoc(doc(db, 'users', sub.userId));
-                if(userDoc.exists()) {
-                    sub.user = {
-                        displayName: userDoc.data().displayName,
-                        email: userDoc.data().email
-                    }
-                }
-                subs.push(sub);
-            }
-        }
-        setSubmissions(subs);
-        setLoading(false);
-    });
-
-    return () => {
-      unsubTasks();
-      unsubSubmissions();
-    };
-  }, []);
-
+  
   const onTaskSubmit: SubmitHandler<TaskFormValues> = async (data) => {
     try {
       await addDoc(collection(db, 'tasks'), {
@@ -148,11 +141,11 @@ export default function AdminTasksPage() {
                         <CardTitle>Pending Submissions</CardTitle>
                         <CardDescription>Review and approve or reject user task submissions.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                         <TableRow>
-                            <TableHead>User</TableHead>
+                            <TableHead>User ID</TableHead>
                             <TableHead>Task ID</TableHead>
                             <TableHead>Submission</TableHead>
                             <TableHead>Screenshot</TableHead>
@@ -160,16 +153,13 @@ export default function AdminTasksPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {loading && submissions.length === 0 ? (
+                        {submissionsLoading && submissions.length === 0 ? (
                             <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : submissions.length === 0 ? (
                             <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={5} className="h-24 text-center block md:table-cell">No pending submissions.</TableCell></TableRow>
                         ) : submissions.map(sub => (
                             <TableRow key={sub.id}>
-                            <TableCell data-label="User">
-                                <div>{sub.user?.displayName}</div>
-                                <div className="text-xs text-muted-foreground">{sub.user?.email}</div>
-                            </TableCell>
+                            <TableCell data-label="User ID" className="font-mono text-xs">{sub.userId}</TableCell>
                             <TableCell data-label="Task ID" className="font-mono text-xs">{sub.taskId}</TableCell>
                             <TableCell data-label="Submission Text" className="max-w-xs truncate">{sub.submissionText}</TableCell>
                             <TableCell data-label="Screenshot">
@@ -186,12 +176,22 @@ export default function AdminTasksPage() {
                         </TableBody>
                     </Table>
                     </CardContent>
+                     <CardFooter className="justify-end">
+                        <PaginationControls
+                            canPrev={canPrevSubs}
+                            canNext={canNextSubs}
+                            currentPage={subsCurrentPage}
+                            onPrev={prevSubs}
+                            onNext={nextSubs}
+                            loading={submissionsLoading}
+                        />
+                    </CardFooter>
                 </Card>
             </TabsContent>
              <TabsContent value="all-tasks">
                 <Card>
                     <CardHeader><CardTitle>All Tasks</CardTitle></CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                      <Table>
                         <TableHeader>
                         <TableRow>
@@ -202,7 +202,7 @@ export default function AdminTasksPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {loading && tasks.length === 0 ? (
+                        {tasksLoading && tasks.length === 0 ? (
                            <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : tasks.map(task => (
                             <TableRow key={task.id}>
@@ -215,6 +215,16 @@ export default function AdminTasksPage() {
                         </TableBody>
                     </Table>
                     </CardContent>
+                     <CardFooter className="justify-end">
+                        <PaginationControls
+                            canPrev={canPrevTasks}
+                            canNext={canNextTasks}
+                            currentPage={tasksCurrentPage}
+                            onPrev={prevTasks}
+                            onNext={nextTasks}
+                            loading={tasksLoading}
+                        />
+                    </CardFooter>
                 </Card>
              </TabsContent>
        </Tabs>

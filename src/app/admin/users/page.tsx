@@ -1,31 +1,40 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, DocumentData } from 'firebase/firestore';
+import React from 'react';
+import { collection, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
+import { Button } from '@/components/ui/button';
+
+const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loading }: { canPrev: boolean, canNext: boolean, currentPage: number, onPrev: () => void, onNext: () => void, loading: boolean }) => (
+    <div className="flex items-center justify-end space-x-2 py-4">
+        <span className="text-sm text-muted-foreground">Page {currentPage}</span>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrev}
+            disabled={!canPrev || loading}
+        >
+            Previous
+        </Button>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onNext}
+            disabled={!canNext || loading}
+        >
+            Next
+        </Button>
+    </div>
+);
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<DocumentData[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedUsers: DocumentData[] = [];
-      snapshot.forEach(doc => {
-        fetchedUsers.push({ id: doc.id, ...doc.data() });
-      });
-      setUsers(fetchedUsers);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const { data: users, loading, nextPage, prevPage, currentPage, canNext, canPrev } = useAdminPagination('users', [orderBy('createdAt', 'desc')]);
 
   return (
     <div className="space-y-6">
@@ -34,7 +43,7 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>All Users</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -47,7 +56,7 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {loading && users.length === 0 ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -73,6 +82,16 @@ export default function AdminUsersPage() {
             </TableBody>
           </Table>
         </CardContent>
+        <CardFooter className="justify-end">
+            <PaginationControls
+                canPrev={canPrev}
+                canNext={canNext}
+                currentPage={currentPage}
+                onPrev={prevPage}
+                onNext={nextPage}
+                loading={loading}
+            />
+        </CardFooter>
       </Card>
     </div>
   );

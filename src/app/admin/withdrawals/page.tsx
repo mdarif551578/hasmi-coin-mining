@@ -1,9 +1,9 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { collection, onSnapshot, query, where, orderBy, DocumentData, doc, updateDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,39 +12,48 @@ import { format } from 'date-fns';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
 import { Check, X } from 'lucide-react';
 import { increment } from 'firebase/firestore';
+import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
+
+const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loading }: { canPrev: boolean, canNext: boolean, currentPage: number, onPrev: () => void, onNext: () => void, loading: boolean }) => (
+    <div className="flex items-center justify-end space-x-2 py-4">
+        <span className="text-sm text-muted-foreground">Page {currentPage}</span>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrev}
+            disabled={!canPrev || loading}
+        >
+            Previous
+        </Button>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onNext}
+            disabled={!canNext || loading}
+        >
+            Next
+        </Button>
+    </div>
+);
 
 export default function AdminWithdrawalsPage() {
-  const [requests, setRequests] = useState<DocumentData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: requests, loading, nextPage, prevPage, currentPage, canNext, canPrev } = useAdminPagination('withdrawals', [where('status', '==', 'pending'), orderBy('createdAt', 'desc')]);
   const { loading: actionLoading, handleRequest } = useAdminActions();
 
-  useEffect(() => {
-    const q = query(collection(db, 'withdrawals'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedRequests: DocumentData[] = [];
-      snapshot.forEach(doc => {
-        fetchedRequests.push({ id: doc.id, ...doc.data() });
-      });
-      setRequests(fetchedRequests);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
  const onAction = async (docId: string, action: 'approved' | 'rejected', userId: string, amount: number) => {
-    // For withdrawals, we only need to update the status on approval. The balance was already checked.
-    // On rejection, we need to return the funds.
-    const updateData = action === 'rejected' ? { usd_balance: increment(amount) } : undefined;
-    
-     if (action === 'approved') {
-        await handleRequest('withdrawals', docId, action);
+    if (action === 'approved') {
+        await handleRequest('withdrawals', docId, action, userId);
     } else { // For rejection, we give the money back.
         const userDocRef = doc(db, 'users', userId);
         const reqDocRef = doc(db, 'withdrawals', docId);
-        await runTransaction(db, async (transaction) => {
-            transaction.update(reqDocRef, { status: 'rejected' });
-            transaction.update(userDocRef, { usd_balance: increment(amount) });
-        });
+        try {
+            await runTransaction(db, async (transaction) => {
+                transaction.update(reqDocRef, { status: 'rejected' });
+                transaction.update(userDocRef, { usd_balance: increment(amount) });
+            });
+        } catch (error) {
+            console.error("Failed to reject withdrawal:", error)
+        }
     }
   }
 
@@ -56,7 +65,7 @@ export default function AdminWithdrawalsPage() {
           <CardTitle>Pending Withdrawals</CardTitle>
           <CardDescription>Review and process pending withdrawal requests from users.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -69,7 +78,7 @@ export default function AdminWithdrawalsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {loading && requests.length === 0 ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
@@ -101,6 +110,16 @@ export default function AdminWithdrawalsPage() {
             </TableBody>
           </Table>
         </CardContent>
+         <CardFooter className="justify-end">
+            <PaginationControls
+                canPrev={canPrev}
+                canNext={canNext}
+                currentPage={currentPage}
+                onPrev={prevPage}
+                onNext={nextPage}
+                loading={loading}
+            />
+        </CardFooter>
       </Card>
     </div>
   );

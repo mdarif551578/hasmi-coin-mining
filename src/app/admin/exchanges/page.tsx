@@ -1,9 +1,8 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, DocumentData } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { orderBy } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,37 +10,46 @@ import { format } from 'date-fns';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
 import { Check, X, ArrowRight } from 'lucide-react';
 import { increment } from 'firebase/firestore';
+import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
+
+const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loading }: { canPrev: boolean, canNext: boolean, currentPage: number, onPrev: () => void, onNext: () => void, loading: boolean }) => (
+    <div className="flex items-center justify-end space-x-2 py-4">
+        <span className="text-sm text-muted-foreground">Page {currentPage}</span>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrev}
+            disabled={!canPrev || loading}
+        >
+            Previous
+        </Button>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onNext}
+            disabled={!canNext || loading}
+        >
+            Next
+        </Button>
+    </div>
+);
+
 
 export default function AdminExchangesPage() {
-  const [requests, setRequests] = useState<DocumentData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryConstraints = useMemo(() => [orderBy('createdAt', 'desc')], []);
+  const { data, loading, nextPage, prevPage, currentPage, canNext, canPrev } = useAdminPagination('exchange_requests', queryConstraints);
   const { loading: actionLoading, handleRequest } = useAdminActions();
 
-  useEffect(() => {
-    const q = query(collection(db, 'exchange_requests'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedRequests: DocumentData[] = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.status === 'pending') {
-          fetchedRequests.push({ id: doc.id, ...data });
-        }
-      });
-      setRequests(fetchedRequests);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+  const requests = data.filter(req => req.status === 'pending');
 
-  const onAction = (docId: string, action: 'approved' | 'rejected', req: DocumentData) => {
+  const onAction = (docId: string, action: 'approved' | 'rejected', req: any) => {
     const updateData = action === 'approved' ? {
         usd_balance: increment(-req.usdAmount),
         wallet_balance: increment(req.hcAmount)
     } : {
         usd_balance: increment(req.usdAmount), // Return USD on rejection
     };
-
-    handleRequest('exchange_requests', docId, action, updateData);
+    handleRequest('exchange_requests', docId, action, req.userId, updateData);
   }
 
   return (
@@ -52,7 +60,7 @@ export default function AdminExchangesPage() {
           <CardTitle>Pending Exchanges</CardTitle>
           <CardDescription>Review and process pending USD to HC exchanges from users.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -64,7 +72,7 @@ export default function AdminExchangesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {loading && requests.length === 0 ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
@@ -99,6 +107,16 @@ export default function AdminExchangesPage() {
             </TableBody>
           </Table>
         </CardContent>
+         <CardFooter className="justify-end">
+            <PaginationControls
+                canPrev={canPrev}
+                canNext={canNext}
+                currentPage={currentPage}
+                onPrev={prevPage}
+                onNext={nextPage}
+                loading={loading}
+            />
+        </CardFooter>
       </Card>
     </div>
   );

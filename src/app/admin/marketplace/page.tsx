@@ -1,43 +1,49 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, orderBy, DocumentData } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React from 'react';
+import { useMemo } from 'react';
+import { where, orderBy } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
-import { Check, X, ArrowRight } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import type { BuyRequest, MarketListing } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
+
+const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loading }: { canPrev: boolean, canNext: boolean, currentPage: number, onPrev: () => void, onNext: () => void, loading: boolean }) => (
+    <div className="flex items-center justify-end space-x-2 py-4">
+        <span className="text-sm text-muted-foreground">Page {currentPage}</span>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrev}
+            disabled={!canPrev || loading}
+        >
+            Previous
+        </Button>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={onNext}
+            disabled={!canNext || loading}
+        >
+            Next
+        </Button>
+    </div>
+);
 
 export default function AdminMarketplacePage() {
-  const [pendingListings, setPendingListings] = useState<MarketListing[]>([]);
-  const [pendingBuyRequests, setPendingBuyRequests] = useState<BuyRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { loading: actionLoading, handleMarketListing, handleBuyRequest } = useAdminActions();
+    const listingsQuery = useMemo(() => [where('status', '==', 'pending'), orderBy('createdAt', 'desc')], []);
+    const buyRequestsQuery = useMemo(() => [where('status', '==', 'pending'), orderBy('createdAt', 'desc')], []);
 
-  useEffect(() => {
-    const listingsQuery = query(collection(db, 'market_listings'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
-    const buyRequestsQuery = query(collection(db, 'buy_requests'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
-
-    const unsubListings = onSnapshot(listingsQuery, (snapshot) => {
-      setPendingListings(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MarketListing)));
-      setLoading(false);
-    });
+    const { data: pendingListings, loading: loadingListings, nextPage: nextListings, prevPage: prevListings, currentPage: currentListingsPage, canNext: canNextListings, canPrev: canPrevListings } = useAdminPagination('market_listings', listingsQuery);
+    const { data: pendingBuyRequests, loading: loadingBuyRequests, nextPage: nextBuyReqs, prevPage: prevBuyReqs, currentPage: currentBuyReqsPage, canNext: canNextBuyReqs, canPrev: canPrevBuyReqs } = useAdminPagination('buy_requests', buyRequestsQuery);
     
-    const unsubBuyRequests = onSnapshot(buyRequestsQuery, (snapshot) => {
-      setPendingBuyRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuyRequest)));
-      setLoading(false);
-    });
-
-    return () => {
-        unsubListings();
-        unsubBuyRequests();
-    };
-  }, []);
+    const { loading: actionLoading, handleMarketListing, handleBuyRequest } = useAdminActions();
 
   return (
     <div className="space-y-6">
@@ -53,7 +59,7 @@ export default function AdminMarketplacePage() {
                         <CardTitle>Pending Sell Offers</CardTitle>
                         <CardDescription>Approve or reject new sell offers created by users.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         <Table>
                         <TableHeader>
                             <TableRow>
@@ -66,7 +72,7 @@ export default function AdminMarketplacePage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {loading && pendingListings.length === 0 ? (
+                            {loadingListings && pendingListings.length === 0 ? (
                                 <TableRow><TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : pendingListings.length === 0 ? (
                                 <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={6} className="h-24 text-center block md:table-cell">No pending sell offers.</TableCell></TableRow>
@@ -86,6 +92,16 @@ export default function AdminMarketplacePage() {
                         </TableBody>
                         </Table>
                     </CardContent>
+                     <CardFooter className="justify-end">
+                        <PaginationControls
+                            canPrev={canPrevListings}
+                            canNext={canNextListings}
+                            currentPage={currentListingsPage}
+                            onPrev={prevListings}
+                            onNext={nextListings}
+                            loading={loadingListings}
+                        />
+                    </CardFooter>
                 </Card>
             </TabsContent>
             <TabsContent value="buy-requests">
@@ -94,7 +110,7 @@ export default function AdminMarketplacePage() {
                         <CardTitle>Pending Buy Requests</CardTitle>
                         <CardDescription>Finalize P2P trades by approving or rejecting buy requests.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         <Table>
                         <TableHeader>
                             <TableRow>
@@ -106,7 +122,7 @@ export default function AdminMarketplacePage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {loading && pendingBuyRequests.length === 0 ? (
+                            {loadingBuyRequests && pendingBuyRequests.length === 0 ? (
                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : pendingBuyRequests.length === 0 ? (
                                 <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={5} className="h-24 text-center block md:table-cell">No pending buy requests.</TableCell></TableRow>
@@ -119,14 +135,24 @@ export default function AdminMarketplacePage() {
                                         {req.amount.toLocaleString()} HC for ${req.totalPrice.toFixed(2)}
                                     </TableCell>
                                     <TableCell data-label="Actions" className="text-right">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500" onClick={() => handleBuyRequest(req, 'approved')} disabled={actionLoading}><Check /></Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleBuyRequest(req, 'rejected')} disabled={actionLoading}><X /></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500" onClick={() => handleBuyRequest(req as BuyRequest, 'approved')} disabled={actionLoading}><Check /></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleBuyRequest(req as BuyRequest, 'rejected')} disabled={actionLoading}><X /></Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                         </Table>
                     </CardContent>
+                     <CardFooter className="justify-end">
+                        <PaginationControls
+                            canPrev={canPrevBuyReqs}
+                            canNext={canNextBuyReqs}
+                            currentPage={currentBuyReqsPage}
+                            onPrev={prevBuyReqs}
+                            onNext={nextBuyReqs}
+                            loading={loadingBuyRequests}
+                        />
+                    </CardFooter>
                 </Card>
             </TabsContent>
        </Tabs>

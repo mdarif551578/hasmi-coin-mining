@@ -11,7 +11,7 @@ export function useAdminActions() {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
 
-    const handleRequest = async (collectionName: string, docId: string, action: 'approved' | 'rejected', updateData?: Record<string, any>) => {
+    const handleRequest = async (collectionName: string, docId: string, action: 'approved' | 'rejected', userId: string, updateData?: Record<string, any>) => {
         setLoading(true);
         try {
             const docRef = doc(db, collectionName, docId);
@@ -20,13 +20,12 @@ export function useAdminActions() {
                 if (!docSnap.exists()) {
                     throw new Error("Document does not exist!");
                 }
-                const data = docSnap.data();
-
+                
                 // Base update
                 transaction.update(docRef, { status: action });
 
                 if (action === 'approved' && updateData) {
-                    const userRef = doc(db, 'users', data.userId);
+                    const userRef = doc(db, 'users', userId);
                     transaction.update(userRef, updateData);
                 }
             });
