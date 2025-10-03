@@ -1,7 +1,7 @@
 
 'use client';
-import React from 'react';
-import { where, orderBy } from 'firebase/firestore';
+import React, { useMemo } from 'react';
+import { orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -36,8 +36,11 @@ const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loa
 );
 
 export default function AdminDepositsPage() {
-  const { data: requests, loading, nextPage, prevPage, currentPage, canNext, canPrev } = useAdminPagination('deposits', [where('status', '==', 'pending'), orderBy('createdAt', 'desc')]);
+  const queryConstraints = useMemo(() => [orderBy('createdAt', 'desc')], []);
+  const { data, loading, nextPage, prevPage, currentPage, canNext, canPrev } = useAdminPagination('deposits', queryConstraints);
   const { loading: actionLoading, handleRequest } = useAdminActions();
+
+  const requests = data.filter(req => req.status === 'pending');
 
   const onAction = (docId: string, action: 'approved' | 'rejected', amount: number, userId: string) => {
     const updateData = action === 'approved' ? { usd_balance: increment(amount) } : undefined;
