@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
-import { Check, X, Plus, ExternalLink } from 'lucide-react';
+import { Check, X, Plus, ExternalLink, Loader2 } from 'lucide-react';
 import type { AppTask } from '@/lib/types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -21,14 +21,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
+import axios from 'axios';
+import { Switch } from '@/components/ui/switch';
 
 const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
   reward: z.coerce.number().min(0, 'Reward must be non-negative'),
   link: z.string().url('Must be a valid URL'),
   isActive: z.boolean(),
+  image: z.any().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -63,21 +67,49 @@ export default function AdminTasksPage() {
   const submissionsQueryConstraints = useMemo(() => [orderBy('createdAt', 'desc')], []);
 
   const { data: tasks, loading: tasksLoading, nextPage: nextTasks, prevPage: prevTasks, currentPage: tasksCurrentPage, canNext: canNextTasks, canPrev: canPrevTasks } = useAdminPagination('tasks', tasksQueryConstraints);
-  const { data, loading: submissionsLoading, nextPage: nextSubs, prevPage: prevSubs, currentPage: subsCurrentPage, canNext: canNextSubs, canPrev: canPrevSubs } = useAdminPagination('task_submissions', submissionsQueryConstraints);
+  const { data: allSubmissions, loading: submissionsLoading, nextPage: nextSubs, prevPage: prevSubs, currentPage: subsCurrentPage, canNext: canNextSubs, canPrev: canPrevSubs } = useAdminPagination('task_submissions', submissionsQueryConstraints);
 
-  const submissions = data.filter(sub => sub.status === 'pending');
+  const submissions = allSubmissions.filter(sub => sub.status === 'pending');
 
   const { loading: actionLoading, handleTaskSubmission } = useAdminActions();
   
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<TaskFormValues>({
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: { isActive: true },
   });
+
+  const [isUploading, setIsUploading] = useState(false);
   
   const onTaskSubmit: SubmitHandler<TaskFormValues> = async (data) => {
+    let imageUrl = '';
+    const imageFile = data.image?.[0];
+
+    if (imageFile) {
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        try {
+            const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            imageUrl = res.data.url;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the task image.' });
+            setIsUploading(false);
+            return;
+        } finally {
+            setIsUploading(false);
+        }
+    }
+
     try {
       await addDoc(collection(db, 'tasks'), {
-        ...data,
+        title: data.title,
+        description: data.description,
+        reward: data.reward,
+        link: data.link,
+        isActive: data.isActive,
+        imageUrl: imageUrl,
         createdAt: serverTimestamp(),
       });
       toast({ title: 'Success', description: 'New task has been created.' });
@@ -96,34 +128,49 @@ export default function AdminTasksPage() {
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Create Task</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
               <DialogDescription>Add a new task for users to complete.</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onTaskSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onTaskSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
               <div>
                 <Label htmlFor="title">Title</Label>
-                <Textarea id="title" {...register('title')} />
+                <Input id="title" {...register('title')} />
                 {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
               </div>
               <div>
-                <Label htmlFor="reward">Reward (HC)</Label>
-                <Input id="reward" type="number" {...register('reward')} />
-                {errors.reward && <p className="text-red-500 text-sm">{errors.reward.message}</p>}
+                <Label htmlFor="description">Description (Markdown Supported)</Label>
+                <Textarea id="description" {...register('description')} placeholder="**Bold**, *italic*, new lines, etc."/>
+                {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
               </div>
-              <div>
-                <Label htmlFor="link">Link</Label>
-                <Input id="link" {...register('link')} />
-                {errors.link && <p className="text-red-500 text-sm">{errors.link.message}</p>}
+               <div>
+                <Label htmlFor="image">Task Image</Label>
+                <Input id="image" type="file" accept="image/*" {...register('image')} />
+                {errors.image && <p className="text-red-500 text-sm">{errors.image.message as string}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="reward">Reward (HC)</Label>
+                    <Input id="reward" type="number" {...register('reward')} />
+                    {errors.reward && <p className="text-red-500 text-sm">{errors.reward.message}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="link">Link</Label>
+                    <Input id="link" {...register('link')} />
+                    {errors.link && <p className="text-red-500 text-sm">{errors.link.message}</p>}
+                  </div>
               </div>
               <div className="flex items-center space-x-2">
-                <input type="checkbox" id="isActive" {...register('isActive')} className="h-4 w-4" defaultChecked/>
+                <Switch id="isActive" {...register('isActive')} checked={watch('isActive')} />
                 <Label htmlFor="isActive">Is Active</Label>
               </div>
-              <DialogFooter>
+              <DialogFooter className="sticky bottom-0 bg-background pt-4">
                 <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={isSubmitting}>Create</Button>
+                <Button type="submit" disabled={isSubmitting || isUploading}>
+                  {(isSubmitting || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isUploading ? 'Uploading...' : isSubmitting ? 'Creating...' : 'Create'}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -195,6 +242,7 @@ export default function AdminTasksPage() {
                      <Table>
                         <TableHeader>
                         <TableRow>
+                            <TableHead>Image</TableHead>
                             <TableHead>Title</TableHead>
                             <TableHead>Reward</TableHead>
                             <TableHead>Link</TableHead>
@@ -203,10 +251,13 @@ export default function AdminTasksPage() {
                         </TableHeader>
                         <TableBody>
                         {tasksLoading && tasks.length === 0 ? (
-                           <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                           <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : tasks.map(task => (
                             <TableRow key={task.id}>
-                            <TableCell data-label="Title">{task.title}</TableCell>
+                             <TableCell data-label="Image">
+                                {task.imageUrl ? <Image src={`${API_BASE_URL}${task.imageUrl}`} alt="Task image" width={64} height={36} className="rounded-md object-cover" /> : 'No image'}
+                             </TableCell>
+                            <TableCell data-label="Title" className="max-w-xs truncate">{task.title}</TableCell>
                             <TableCell data-label="Reward">{task.reward} HC</TableCell>
                             <TableCell data-label="Link"><a href={task.link} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline">Link <ExternalLink className="h-3 w-3" /></a></TableCell>
                             <TableCell data-label="Status">{task.isActive ? 'Active' : 'Inactive'}</TableCell>

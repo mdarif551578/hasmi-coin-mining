@@ -44,6 +44,8 @@ export type AppTask = {
   link: string;
   isActive: boolean;
   createdAt: Timestamp;
+  description?: string;
+  imageUrl?: string;
 };
 
 export type TaskSubmission = {
