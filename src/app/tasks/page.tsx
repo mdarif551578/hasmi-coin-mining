@@ -51,14 +51,14 @@ export default function TasksPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<TaskSubmission | null>(null);
   
   const [submissionText, setSubmissionText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [files, setFiles] = useState<FileList | null>(null);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const resetDialog = () => {
     setSubmissionText("");
-    setFile(null);
-    setFilePreview(null);
+    setFiles(null);
+    setFilePreviews([]);
     setSelectedTask(null);
     setSelectedSubmission(null);
     setIsUploading(false);
@@ -75,19 +75,20 @@ export default function TasksPage() {
       setSelectedSubmission(submission);
       setSelectedTask(tasks.find(t => t.id === submission.taskId) || null);
       setSubmissionText(submission.submissionText);
-      if (submission.screenshotUrl) {
-        setFilePreview(`${API_BASE_URL}${submission.screenshotUrl}`);
+      if (submission.screenshotUrls) {
+        setFilePreviews(submission.screenshotUrls.map(url => `${API_BASE_URL}${url}`));
       }
       setSubmitDialogOpen(true);
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0] || null;
-    setFile(selectedFile);
-    if (selectedFile) {
-        setFilePreview(URL.createObjectURL(selectedFile));
+    const selectedFiles = e.target.files;
+    setFiles(selectedFiles);
+    if (selectedFiles) {
+        const previews = Array.from(selectedFiles).map(file => URL.createObjectURL(file));
+        setFilePreviews(previews);
     } else {
-        setFilePreview(null);
+        setFilePreviews([]);
     }
   }
 
@@ -95,36 +96,38 @@ export default function TasksPage() {
     e.preventDefault();
     if (!selectedTask) return;
     
-    let finalScreenshotUrl = selectedSubmission?.screenshotUrl;
+    let finalScreenshotUrls: string[] = selectedSubmission?.screenshotUrls?.map(url => url.replace(API_BASE_URL, '')) || [];
 
-    if (file) { // New file was selected, upload it
+    if (files && files.length > 0) { // New files were selected, upload them
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append("file", file);
+        finalScreenshotUrls = []; // Reset if new files are being uploaded
+        for (const file of Array.from(files)) {
+            const formData = new FormData();
+            formData.append("file", file);
 
-        try {
-            const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-            finalScreenshotUrl = res.data.url;
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload your screenshot.' });
-            setIsUploading(false);
-            return;
-        } finally {
-            setIsUploading(false);
+            try {
+                const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+                finalScreenshotUrls.push(res.data.url);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Upload Failed', description: `Could not upload ${file.name}.` });
+                setIsUploading(false);
+                return;
+            }
         }
+        setIsUploading(false);
     }
 
-    if (!finalScreenshotUrl) {
-        toast({ variant: 'destructive', title: 'Missing Screenshot', description: 'Please select an image to upload.' });
+    if (finalScreenshotUrls.length === 0) {
+        toast({ variant: 'destructive', title: 'Missing Screenshot', description: 'Please select at least one image to upload.' });
         return;
     }
     
     if (selectedSubmission) { // This is an update
-        await updateSubmission(selectedSubmission.id, finalScreenshotUrl, submissionText);
+        await updateSubmission(selectedSubmission.id, finalScreenshotUrls, submissionText);
     } else { // This is a new submission
-        await createSubmission(selectedTask.id, finalScreenshotUrl, submissionText);
+        await createSubmission(selectedTask.id, finalScreenshotUrls, submissionText);
     }
 
     if (!isSubmitting) {
@@ -159,9 +162,9 @@ export default function TasksPage() {
             const submission = submissions.find(s => s.taskId === task.id);
             return (
                 <Card key={task.id} className="rounded-2xl overflow-hidden">
-                    {task.imageUrl && (
+                    {task.imageUrls && task.imageUrls.length > 0 && (
                         <div className="aspect-video relative">
-                            <Image src={`${API_BASE_URL}${task.imageUrl}`} alt={task.title} layout="fill" className="object-cover"/>
+                            <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt={task.title} layout="fill" className="object-cover"/>
                         </div>
                     )}
                     <CardContent className="p-4">
@@ -240,7 +243,7 @@ export default function TasksPage() {
               <DialogHeader>
                   <DialogTitle>{selectedSubmission ? 'Edit' : 'Submit'} Proof for: {selectedTask?.title}</DialogTitle>
                   <DialogDescription>
-                      Provide a screenshot and any required text to prove you've completed the task.
+                      Provide screenshots and any required text to prove you've completed the task.
                   </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleDialogSubmit} className="space-y-4 pt-2">
@@ -254,11 +257,15 @@ export default function TasksPage() {
                       </Button>
                  </div>
                   <div className="space-y-2">
-                      <Label htmlFor="screenshot">Screenshot</Label>
-                      <Input id="screenshot" type="file" accept="image/*" onChange={handleFileChange} />
-                      {filePreview && (
-                        <div className="mt-2 rounded-md overflow-hidden border">
-                            <Image src={filePreview} alt="Screenshot preview" width={500} height={300} className="aspect-video w-full object-cover" />
+                      <Label htmlFor="screenshots">Screenshots</Label>
+                      <Input id="screenshots" type="file" accept="image/*" onChange={handleFileChange} multiple />
+                      {filePreviews.length > 0 && (
+                        <div className="mt-2 grid grid-cols-3 gap-2">
+                            {filePreviews.map((previewUrl, index) => (
+                                <div key={index} className="rounded-md overflow-hidden border aspect-video relative">
+                                    <Image src={previewUrl} alt={`Screenshot preview ${index + 1}`} layout="fill" className="object-cover" />
+                                </div>
+                            ))}
                         </div>
                       )}
                   </div>

@@ -45,14 +45,14 @@ export type AppTask = {
   isActive: boolean;
   createdAt: Timestamp;
   description?: string;
-  imageUrl?: string;
+  imageUrls?: string[];
 };
 
 export type TaskSubmission = {
     id: string;
     userId: string;
     taskId: string;
-    screenshotUrl: string;
+    screenshotUrls: string[];
     submissionText: string;
     status: 'pending' | 'approved' | 'rejected';
     createdAt: any;

@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
-import { Check, X, Plus, ExternalLink, Loader2 } from 'lucide-react';
+import { Check, X, Plus, ExternalLink, Loader2, Image as ImageIcon } from 'lucide-react';
 import type { AppTask } from '@/lib/types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import Image from 'next/image';
 import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
 import axios from 'axios';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
@@ -32,7 +33,7 @@ const taskSchema = z.object({
   reward: z.coerce.number().min(0, 'Reward must be non-negative'),
   link: z.string().url('Must be a valid URL'),
   isActive: z.boolean(),
-  image: z.any().optional(),
+  images: z.any().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -81,25 +82,26 @@ export default function AdminTasksPage() {
   const [isUploading, setIsUploading] = useState(false);
   
   const onTaskSubmit: SubmitHandler<TaskFormValues> = async (data) => {
-    let imageUrl = '';
-    const imageFile = data.image?.[0];
+    const imageUrls: string[] = [];
+    const imageFiles = data.images;
 
-    if (imageFile) {
+    if (imageFiles && imageFiles.length > 0) {
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append("file", imageFile);
-        try {
-            const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-            imageUrl = res.data.url;
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the task image.' });
-            setIsUploading(false);
-            return;
-        } finally {
-            setIsUploading(false);
+        for (const file of imageFiles) {
+            const formData = new FormData();
+            formData.append("file", file);
+            try {
+                const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+                imageUrls.push(res.data.url);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Upload Failed', description: `Could not upload image ${file.name}.` });
+                setIsUploading(false);
+                return;
+            }
         }
+        setIsUploading(false);
     }
 
     try {
@@ -109,7 +111,7 @@ export default function AdminTasksPage() {
         reward: data.reward,
         link: data.link,
         isActive: data.isActive,
-        imageUrl: imageUrl,
+        imageUrls: imageUrls,
         createdAt: serverTimestamp(),
       });
       toast({ title: 'Success', description: 'New task has been created.' });
@@ -145,9 +147,9 @@ export default function AdminTasksPage() {
                 {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
               </div>
                <div>
-                <Label htmlFor="image">Task Image</Label>
-                <Input id="image" type="file" accept="image/*" {...register('image')} />
-                {errors.image && <p className="text-red-500 text-sm">{errors.image.message as string}</p>}
+                <Label htmlFor="images">Task Images</Label>
+                <Input id="images" type="file" accept="image/*" {...register('images')} multiple />
+                {errors.images && <p className="text-red-500 text-sm">{errors.images.message as string}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -162,7 +164,7 @@ export default function AdminTasksPage() {
                   </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Switch id="isActive" {...register('isActive')} checked={watch('isActive')} />
+                <Switch id="isActive" {...register('isActive')} checked={watch('isActive')} onCheckedChange={(checked) => reset({ ...watch(), isActive: checked })}/>
                 <Label htmlFor="isActive">Is Active</Label>
               </div>
               <DialogFooter className="sticky bottom-0 bg-background pt-4">
@@ -195,7 +197,7 @@ export default function AdminTasksPage() {
                             <TableHead>User ID</TableHead>
                             <TableHead>Task ID</TableHead>
                             <TableHead>Submission</TableHead>
-                            <TableHead>Screenshot</TableHead>
+                            <TableHead>Screenshots</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                         </TableHeader>
@@ -209,10 +211,22 @@ export default function AdminTasksPage() {
                             <TableCell data-label="User ID" className="font-mono text-xs">{sub.userId}</TableCell>
                             <TableCell data-label="Task ID" className="font-mono text-xs">{sub.taskId}</TableCell>
                             <TableCell data-label="Submission Text" className="max-w-xs truncate">{sub.submissionText}</TableCell>
-                            <TableCell data-label="Screenshot">
-                                <a href={`${API_BASE_URL}${sub.screenshotUrl}`} target="_blank" rel="noopener noreferrer">
-                                <Image src={`${API_BASE_URL}${sub.screenshotUrl}`} alt="Screenshot" width={80} height={45} className="rounded-md object-cover" />
-                                </a>
+                            <TableCell data-label="Screenshots">
+                                {sub.screenshotUrls && sub.screenshotUrls.length > 0 ? (
+                                    <div className="flex items-center gap-2">
+                                        <a href={`${API_BASE_URL}${sub.screenshotUrls[0]}`} target="_blank" rel="noopener noreferrer">
+                                            <Image src={`${API_BASE_URL}${sub.screenshotUrls[0]}`} alt="Screenshot" width={80} height={45} className="rounded-md object-cover" />
+                                        </a>
+                                        {sub.screenshotUrls.length > 1 && (
+                                            <Badge variant="secondary">+{sub.screenshotUrls.length - 1}</Badge>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <ImageIcon className="size-4" />
+                                        <span>No screenshots</span>
+                                    </div>
+                                )}
                             </TableCell>
                             <TableCell data-label="Actions" className="text-right">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500" onClick={() => handleTaskSubmission(sub.id, 'approved')} disabled={actionLoading}><Check /></Button>
@@ -255,7 +269,7 @@ export default function AdminTasksPage() {
                         ) : tasks.map(task => (
                             <TableRow key={task.id}>
                              <TableCell data-label="Image">
-                                {task.imageUrl ? <Image src={`${API_BASE_URL}${task.imageUrl}`} alt="Task image" width={64} height={36} className="rounded-md object-cover" /> : 'No image'}
+                                {task.imageUrls && task.imageUrls.length > 0 ? <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt="Task image" width={64} height={36} className="rounded-md object-cover" /> : 'No image'}
                              </TableCell>
                             <TableCell data-label="Title" className="max-w-xs truncate">{task.title}</TableCell>
                             <TableCell data-label="Reward">{task.reward} HC</TableCell>

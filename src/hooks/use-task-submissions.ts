@@ -41,14 +41,14 @@ export function useTaskSubmissions() {
     return () => unsubscribe();
   }, [user, toast]);
 
-  const createSubmission = async (taskId: string, screenshotUrl: string, submissionText: string) => {
+  const createSubmission = async (taskId: string, screenshotUrls: string[], submissionText: string) => {
     if (!user) return;
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, 'task_submissions'), {
         userId: user.uid,
         taskId,
-        screenshotUrl,
+        screenshotUrls,
         submissionText,
         status: 'pending',
         createdAt: serverTimestamp(),
@@ -62,13 +62,13 @@ export function useTaskSubmissions() {
     }
   };
 
-  const updateSubmission = async (submissionId: string, screenshotUrl: string, submissionText: string) => {
+  const updateSubmission = async (submissionId: string, screenshotUrls: string[], submissionText: string) => {
     if (!user) return;
     setIsSubmitting(true);
     try {
       const submissionRef = doc(db, 'task_submissions', submissionId);
       await updateDoc(submissionRef, {
-        screenshotUrl,
+        screenshotUrls,
         submissionText,
       });
       toast({ title: 'Submission Updated', description: 'Your changes have been saved.' });
