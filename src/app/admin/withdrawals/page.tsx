@@ -1,7 +1,7 @@
 
 'use client';
-import React from 'react';
-import { collection, onSnapshot, query, orderBy, DocumentData, doc, updateDoc, runTransaction } from 'firebase/firestore';
+import React, { useMemo } from 'react';
+import { orderBy, doc, updateDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,7 +13,6 @@ import { useAdminActions } from '@/hooks/admin/use-admin-actions';
 import { Check, X } from 'lucide-react';
 import { increment } from 'firebase/firestore';
 import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
-import { useMemo } from 'react';
 
 const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loading }: { canPrev: boolean, canNext: boolean, currentPage: number, onPrev: () => void, onNext: () => void, loading: boolean }) => (
     <div className="flex items-center justify-end space-x-2 py-4">

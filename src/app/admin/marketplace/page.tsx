@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
 import { Check, X } from 'lucide-react';
-import type { BuyRequest, MarketListing } from '@/lib/types';
+import type { BuyRequest } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
 
@@ -65,6 +65,7 @@ export default function AdminMarketplacePage() {
                             <TableRow>
                                 <TableHead>Date</TableHead>
                                 <TableHead>Seller ID</TableHead>
+                                <TableHead>Seller Name</TableHead>
                                 <TableHead>Amount (HC)</TableHead>
                                 <TableHead>Rate ($/HC)</TableHead>
                                 <TableHead>Total ($)</TableHead>
@@ -73,13 +74,14 @@ export default function AdminMarketplacePage() {
                         </TableHeader>
                         <TableBody>
                             {loadingListings && pendingListings.length === 0 ? (
-                                <TableRow><TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                <TableRow><TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : pendingListings.length === 0 ? (
-                                <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={6} className="h-24 text-center block md:table-cell">No pending sell offers.</TableCell></TableRow>
+                                <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={7} className="h-24 text-center block md:table-cell">No pending sell offers.</TableCell></TableRow>
                             ) : pendingListings.map(listing => (
                                 <TableRow key={listing.id}>
                                     <TableCell data-label="Date">{format(listing.createdAt.toDate(), 'PP')}</TableCell>
                                     <TableCell data-label="Seller ID" className="font-mono text-xs">{listing.sellerId}</TableCell>
+                                    <TableCell data-label="Seller Name">{listing.sellerName}</TableCell>
                                     <TableCell data-label="Amount">{listing.amount.toLocaleString()} HC</TableCell>
                                     <TableCell data-label="Rate">${listing.rate.toFixed(3)}</TableCell>
                                     <TableCell data-label="Total">${(listing.amount * listing.rate).toFixed(2)}</TableCell>

@@ -1,8 +1,7 @@
 
 'use client';
 import React from 'react';
-import { collection, orderBy, query } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +48,7 @@ export default function AdminUsersPage() {
               <TableRow>
                 <TableHead>Display Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>HC Balance</TableHead>
                 <TableHead>USD Balance</TableHead>
                 <TableHead>Role</TableHead>
@@ -61,6 +61,7 @@ export default function AdminUsersPage() {
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-12" /></TableCell>
@@ -71,6 +72,7 @@ export default function AdminUsersPage() {
                 <TableRow key={user.id}>
                   <TableCell data-label="Name" className="font-medium">{user.displayName}</TableCell>
                   <TableCell data-label="Email">{user.email}</TableCell>
+                  <TableCell data-label="Phone">{user.phone || 'N/A'}</TableCell>
                   <TableCell data-label="HC Balance">{(user.wallet_balance || 0).toLocaleString()}</TableCell>
                   <TableCell data-label="USD Balance">${(user.usd_balance || 0).toFixed(2)}</TableCell>
                   <TableCell data-label="Role">

@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

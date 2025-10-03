@@ -63,8 +63,8 @@ export default function AdminDepositsPage() {
                 <TableHead>User ID</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Method</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Trx ID</TableHead>
+                <TableHead>Phone Number</TableHead>
+                <TableHead>Transaction ID</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -87,8 +87,8 @@ export default function AdminDepositsPage() {
                   <TableCell data-label="User ID" className="font-mono text-xs">{req.userId}</TableCell>
                   <TableCell data-label="Amount" className="font-semibold">${req.amount.toFixed(2)}</TableCell>
                   <TableCell data-label="Method"><Badge variant="outline" className="capitalize">{req.method}</Badge></TableCell>
-                  <TableCell data-label="Phone">{req.phoneNumber}</TableCell>
-                  <TableCell data-label="Trx ID">{req.transactionId}</TableCell>
+                  <TableCell data-label="Phone Number">{req.phoneNumber}</TableCell>
+                  <TableCell data-label="Transaction ID">{req.transactionId}</TableCell>
                   <TableCell data-label="Actions" className="text-right">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600" onClick={() => onAction(req.id, 'approved', req.amount, req.userId)} disabled={actionLoading}>
                         <Check />

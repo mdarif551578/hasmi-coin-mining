@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminActions } from '@/hooks/admin/use-admin-actions';
 import { Check, X, Plus, ExternalLink } from 'lucide-react';
-import type { AppTask, TaskSubmission } from '@/lib/types';
+import type { AppTask } from '@/lib/types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
