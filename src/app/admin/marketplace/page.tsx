@@ -37,13 +37,15 @@ const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loa
 );
 
 export default function AdminMarketplacePage() {
-    const listingsQuery = useMemo(() => [where('status', '==', 'pending'), orderBy('createdAt', 'desc')], []);
+    const listingsQuery = useMemo(() => [orderBy('createdAt', 'desc')], []);
     const buyRequestsQuery = useMemo(() => [where('status', '==', 'pending'), orderBy('createdAt', 'desc')], []);
 
-    const { data: pendingListings, loading: loadingListings, nextPage: nextListings, prevPage: prevListings, currentPage: currentListingsPage, canNext: canNextListings, canPrev: canPrevListings } = useAdminPagination('market_listings', listingsQuery);
+    const { data: allListings, loading: loadingListings, nextPage: nextListings, prevPage: prevListings, currentPage: currentListingsPage, canNext: canNextListings, canPrev: canPrevListings } = useAdminPagination('market_listings', listingsQuery);
     const { data: pendingBuyRequests, loading: loadingBuyRequests, nextPage: nextBuyReqs, prevPage: prevBuyReqs, currentPage: currentBuyReqsPage, canNext: canNextBuyReqs, canPrev: canPrevBuyReqs } = useAdminPagination('buy_requests', buyRequestsQuery);
     
     const { loading: actionLoading, handleMarketListing, handleBuyRequest } = useAdminActions();
+
+    const pendingListings = allListings.filter(listing => listing.status === 'pending');
 
   return (
     <div className="space-y-6">
