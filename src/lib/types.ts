@@ -156,5 +156,7 @@ export type PlanPurchaseRequest = {
   cost: number;
   profit?: number;
   status: 'pending' | 'approved' | 'rejected';
-  createdAt: any;
+  createdAt: Timestamp;
+  duration?: string;
 }
+

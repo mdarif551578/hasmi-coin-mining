@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import type { Message } from "@/lib/types";
 import { useUserAssets } from "@/hooks/use-user-assets";
+import { add, format } from 'date-fns';
 
 
 export default function ProfilePage() {
@@ -48,6 +50,16 @@ export default function ProfilePage() {
     await signOut();
     router.push('/login');
   }
+  
+  const calculateEndDate = (startDate: Date, durationString: string): Date => {
+    const durationParts = durationString.split(' ');
+    const durationValue = parseInt(durationParts[0], 10);
+    const durationUnit = durationParts[1].toLowerCase();
+
+    const duration = { [durationUnit]: durationValue };
+    return add(startDate, duration);
+  };
+
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
@@ -95,15 +107,24 @@ export default function ProfilePage() {
           {loading ? (
             <Skeleton className="h-20 w-full" />
           ) : nfts.length > 0 ? (
-            nfts.map((nft) => (
+            nfts.map((nft) => {
+              const startDate = nft.createdAt?.toDate();
+              const endDate = startDate ? calculateEndDate(startDate, nft.duration || '0 days') : null;
+
+              return (
               <div key={nft.id} className="p-3 bg-card-foreground/5 rounded-lg">
                 <p className="font-semibold text-sm">{nft.planName}</p>
                 <div className="flex justify-between items-end text-xs text-muted-foreground">
                     <span>Cost: ${nft.cost.toFixed(2)}</span>
                     <span className="text-primary font-medium">Return: ${(nft.cost + (nft.profit || 0)).toFixed(2)}</span>
                 </div>
+                 {endDate && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                      Ends on: {format(endDate, 'PP')}
+                  </div>
+                )}
               </div>
-            ))
+            )})
           ) : (
             <p className="text-center text-sm text-muted-foreground py-4">You do not own any NFT assets yet.</p>
           )}
@@ -143,3 +164,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

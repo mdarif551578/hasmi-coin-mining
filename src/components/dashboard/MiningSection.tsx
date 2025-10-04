@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Zap, Gem, ShoppingCart, Loader2, BadgeHelp, Trash2 } from 'lucide-react';
+import { Zap, Gem, ShoppingCart, Loader2, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useUserData } from '@/hooks/use-user-data';
@@ -13,7 +14,6 @@ import { collection, serverTimestamp, updateDoc, addDoc, query, where, onSnapsho
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { Skeleton } from '../ui/skeleton';
-import { Badge } from '../ui/badge';
 import type { PlanPurchaseRequest } from '@/lib/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 
@@ -145,6 +145,7 @@ export function MiningSection() {
     const progress = ((claimIntervalSeconds - timeRemaining) / claimIntervalSeconds) * 100;
     const canClaim = timeRemaining === 0;
     const isLoading = settingsLoading || userLoading;
+    const hasPaidPlan = userData?.mining_plan && userData.mining_plan !== 'Free';
 
     return (
         <Card className="rounded-2xl w-full">
@@ -238,8 +239,8 @@ export function MiningSection() {
                     <TabsContent value="paid" className="mt-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                              {isLoading ? Array.from({length: 2}).map((_,i) => <Skeleton key={i} className="h-48 w-full"/>) : settings?.mining?.paidPlans?.map((plan: any) => {
-                                const isPending = pendingPlanPurchases.some(p => p.planId === plan.id);
                                 const isCurrentPlan = userData?.mining_plan === plan.name;
+                                const isPending = pendingPlanPurchases.some(p => p.planType === 'paid'); // Check for ANY pending paid plan
                                 return (
                                 <Card key={plan.id} className="flex flex-col bg-card-foreground/5 rounded-xl">
                                     <CardHeader>
@@ -251,8 +252,14 @@ export function MiningSection() {
                                         <p className="text-lg font-bold text-primary">${plan.price}</p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-10" onClick={() => handlePurchase(plan, 'paid')} disabled={isSubmitting || isPending || isCurrentPlan}>
-                                            {isSubmitting ? <Loader2 className="animate-spin" /> : isPending ? 'Pending Approval' : isCurrentPlan ? 'Active Plan' : 'Subscribe'}
+                                        <Button className="w-full h-10" onClick={() => handlePurchase(plan, 'paid')} disabled={isSubmitting || isPending || hasPaidPlan}>
+                                            {isSubmitting && <Loader2 className="animate-spin" />}
+                                            {!isSubmitting && (
+                                                isCurrentPlan ? 'Active Plan' :
+                                                hasPaidPlan ? 'Plan Active' :
+                                                isPending ? 'Request Pending' :
+                                                'Subscribe'
+                                            )}
                                         </Button>
                                     </CardFooter>
                                 </Card>
@@ -263,7 +270,7 @@ export function MiningSection() {
                     <TabsContent value="nft" className="mt-4">
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                              {isLoading ? Array.from({length: 2}).map((_,i) => <Skeleton key={i} className="h-48 w-full"/>) : settings?.mining?.nftPlans?.map((plan: any) => {
-                                const isPending = pendingPlanPurchases.some(p => p.planId === plan.id);
+                                const isPending = pendingPlanPurchases.some(p => p.planId === plan.id && p.planType === 'nft');
                                 return (
                                 <Card key={plan.id} className="flex flex-col bg-card-foreground/5 rounded-xl">
                                     <CardHeader>
@@ -275,8 +282,8 @@ export function MiningSection() {
                                         <p>Return: <span className="font-bold text-primary">${(plan.cost + plan.profit).toFixed(2)}</span></p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-10" onClick={() => handlePurchase(plan, 'nft')} disabled={isSubmitting || isPending}>
-                                            {isSubmitting ? <Loader2 className="animate-spin" /> : isPending ? 'Pending Approval' : 'Purchase'}
+                                        <Button className="w-full h-10" onClick={() => handlePurchase(plan, 'nft')} disabled={isSubmitting}>
+                                            {isSubmitting ? <Loader2 className="animate-spin" /> : isPending ? 'Request Pending' : 'Purchase'}
                                         </Button>
                                     </CardFooter>
                                 </Card>
@@ -289,3 +296,4 @@ export function MiningSection() {
         </Card>
     );
 }
+
