@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useMemo } from 'react';
-import { orderBy, doc, updateDoc, runTransaction, increment } from 'firebase/firestore';
+import { orderBy, doc, updateDoc, runTransaction, increment, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,31 +49,48 @@ export default function AdminPlanPurchasesPage() {
     setActionLoading(true);
     const reqRef = doc(db, 'plan_purchases', req.id);
     const userRef = doc(db, 'users', req.userId);
+    const settingsRef = doc(db, 'settings', 'exchangeRates');
 
     try {
         await runTransaction(db, async (transaction) => {
-            const userDoc = await transaction.get(userRef);
+            const [userDoc, settingsDoc] = await Promise.all([
+                transaction.get(userRef),
+                transaction.get(settingsRef)
+            ]);
+
             if (!userDoc.exists()) throw new Error("User not found");
+            if (!settingsDoc.exists()) throw new Error("App settings not found. Cannot process plan purchase.");
+
+            const settingsData = settingsDoc.data();
 
             if (action === 'approved') {
                  if (userDoc.data().usd_balance < req.cost) {
                     throw new Error("User has insufficient funds.");
                 }
-                
-                transaction.update(reqRef, { status: 'approved' });
-                
+
                 const userUpdateData: any = {
                     usd_balance: increment(-req.cost)
                 };
+                
+                const purchaseUpdateData: any = { status: 'approved' };
 
                 if (req.planType === 'paid') {
                     userUpdateData.mining_plan = req.planName;
+                    const paidPlanDetails = settingsData.mining?.paidPlans?.find((p: any) => p.id === req.planId);
+                    if (paidPlanDetails) {
+                        purchaseUpdateData.duration = paidPlanDetails.duration;
+                    }
                 }
                 
-                // For NFT plans, we might just record the purchase.
-                // The actual profit logic would happen elsewhere, perhaps via a scheduled function or when user claims.
-                // For now, we just deduct the cost.
-
+                if (req.planType === 'nft') {
+                    const nftPlanDetails = settingsData.mining?.nftPlans?.find((p: any) => p.id === req.planId);
+                     if (nftPlanDetails) {
+                        purchaseUpdateData.duration = nftPlanDetails.duration;
+                        purchaseUpdateData.profit = nftPlanDetails.profit;
+                    }
+                }
+                
+                transaction.update(reqRef, purchaseUpdateData);
                 transaction.update(userRef, userUpdateData);
 
             } else { // Rejected
@@ -162,4 +179,3 @@ export default function AdminPlanPurchasesPage() {
     </div>
   );
 }
-
