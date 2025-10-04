@@ -55,7 +55,7 @@ export function useTransactions() {
             constraints.push(where(config.statusField, '==', config.statusValue));
         }
         
-        const q = query(collection(db, name), ...constraints, orderBy('createdAt', 'desc'), limit(TRANSACTIONS_PER_PAGE));
+        const q = query(collection(db, name), ...constraints, limit(TRANSACTIONS_PER_PAGE));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedTransactions: Transaction[] = snapshot.docs.map(doc => {
@@ -84,7 +84,6 @@ export function useTransactions() {
             collection(db, 'buy_requests'),
             where('buyerId', '==', user.uid),
             where('status', '==', 'approved'),
-            orderBy('createdAt', 'desc'),
             limit(TRANSACTIONS_PER_PAGE)
         );
 
@@ -92,7 +91,6 @@ export function useTransactions() {
             collection(db, 'buy_requests'),
             where('sellerId', '==', user.uid),
             where('status', '==', 'approved'),
-            orderBy('createdAt', 'desc'),
             limit(TRANSACTIONS_PER_PAGE)
         );
 
