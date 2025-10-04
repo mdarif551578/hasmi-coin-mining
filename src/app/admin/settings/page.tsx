@@ -275,7 +275,7 @@ export default function AdminSettingsPage() {
                                 <Label>Launch Time</Label>
                                 <Input 
                                   type="time"
-                                  value={launchDate ? format(launchDate, 'HH:mm') : ''}
+                                  value={launchDate instanceof Date && !isNaN(launchDate.getTime()) ? format(launchDate, 'HH:mm') : ''}
                                   onChange={handleTimeChange}
                                 />
                            </div>
@@ -322,6 +322,3 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
-
-
-    
