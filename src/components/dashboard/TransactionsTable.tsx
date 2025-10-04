@@ -12,8 +12,8 @@ import { Button } from "../ui/button";
 
 const TransactionIcon = ({ type }: { type: Transaction['type'] }) => {
     const iconMap = {
-        deposit: <ArrowDownLeft className="size-4 text-green-400" />,
-        withdraw: <ArrowUpRight className="size-4 text-red-400" />,
+        deposit: <ArrowDownLeft className="size-4 text-primary" />,
+        withdraw: <ArrowUpRight className="size-4 text-destructive" />,
         mining: <Cog className="size-4 text-muted-foreground" />,
         task: <CheckSquare className="size-4 text-muted-foreground" />,
         exchange: <Repeat className="size-4 text-muted-foreground" />,
@@ -29,30 +29,33 @@ const getStatusBadgeVariant = (status: Transaction['status']): "default" | "seco
     switch (status) {
         case 'completed':
         case 'approved':
+        case 'sold':
             return 'default';
         case 'pending':
             return 'secondary';
         case 'failed':
         case 'rejected':
+        case 'cancelled':
             return 'destructive';
         default:
             return 'secondary';
     }
 };
 
+
 const isPositive = (type: Transaction['type'], currency: Transaction['currency']) => {
     if (currency === 'USD') {
-        return type === 'deposit';
+        return ['deposit', 'marketplace-sell'].includes(type);
     }
     // Assume HC for others
-    return !['withdraw', 'marketplace-buy', 'exchange'].includes(type);
+    return !['withdraw', 'exchange'].includes(type);
 };
 
 export function TransactionsTable({ className }: { className?: string }) {
     const { transactions, loading, loadMore, hasMore } = useTransactions();
 
     return (
-        <Card className={cn("h-full flex flex-col rounded-2xl", className)}>
+        <Card className={cn("h-full flex flex-col rounded-2xl shadow-m", className)}>
             <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
                 <CardDescription>A log of your recent wallet activity.</CardDescription>
@@ -85,7 +88,7 @@ export function TransactionsTable({ className }: { className?: string }) {
                                         <TableCell className="font-medium capitalize text-sm py-2">{tx.type.replace('-', ' ')}</TableCell>
                                         <TableCell className={cn(
                                             "font-semibold text-sm py-2",
-                                            isPositive(tx.type, tx.currency) ? "text-green-400" : "text-red-400"
+                                            isPositive(tx.type, tx.currency) ? "text-primary" : "text-destructive"
                                         )}>
                                             {isPositive(tx.type, tx.currency) ? '+' : '-'}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {tx.currency}
                                         </TableCell>
