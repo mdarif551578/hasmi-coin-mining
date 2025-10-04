@@ -1,7 +1,6 @@
-
 'use client';
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, updateDoc, DocumentData, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, setHours, setMinutes, setSeconds, parse } from 'date-fns';
+import { format, setHours, setMinutes, setSeconds } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
@@ -58,7 +57,7 @@ export default function AdminSettingsPage() {
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = e.target.value;
-    if (launchDate) {
+    if (launchDate && time) {
       const [hours, minutes] = time.split(':').map(Number);
       let newDate = setHours(launchDate, hours);
       newDate = setMinutes(newDate, minutes);
@@ -170,12 +169,12 @@ export default function AdminSettingsPage() {
                          <div>
                             <Label htmlFor="referrer_bonus">Referrer Bonus (HC)</Label>
                             <Input id="referrer_bonus" type="number" step="any" {...register('referral_bonus.referrer_bonus')} />
-                             {errors['referral_bonus.referrer_bonus'] && <p className="text-red-500 text-sm">{errors['referral_bonus.referrer_bonus'].message}</p>}
+                             {errors['referral_bonus.referrer_bonus'] && <p className="text-red-500 text-sm">{errors['referral_bonus.referrer_bonus']?.message}</p>}
                         </div>
                         <div>
                             <Label htmlFor="referee_bonus">Referee Bonus (HC)</Label>
                             <Input id="referee_bonus" type="number" step="any" {...register('referral_bonus.referee_bonus')} />
-                            {errors['referral_bonus.referee_bonus'] && <p className="text-red-500 text-sm">{errors['referral_bonus.referee_bonus'].message}</p>}
+                            {errors['referral_bonus.referee_bonus'] && <p className="text-red-500 text-sm">{errors['referral_bonus.referee_bonus']?.message}</p>}
                         </div>
                     </div>
                   </CardContent>
@@ -191,12 +190,12 @@ export default function AdminSettingsPage() {
                             <div>
                                 <Label htmlFor="bkash_rate">Rate (BDT per USD)</Label>
                                 <Input id="bkash_rate" type="number" step="any" {...register('deposit_methods.bkash.rate')} />
-                                {errors['deposit_methods.bkash.rate'] && <p className="text-red-500 text-sm">{errors['deposit_methods.bkash.rate'].message}</p>}
+                                {errors['deposit_methods.bkash.rate'] && <p className="text-red-500 text-sm">{errors['deposit_methods.bkash.rate']?.message}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="bkash_agent">Agent Number</Label>
                                 <Input id="bkash_agent" {...register('deposit_methods.bkash.agent_number')} />
-                                 {errors['deposit_methods.bkash.agent_number'] && <p className="text-red-500 text-sm">{errors['deposit_methods.bkash.agent_number'].message}</p>}
+                                 {errors['deposit_methods.bkash.agent_number'] && <p className="text-red-500 text-sm">{errors['deposit_methods.bkash.agent_number']?.message}</p>}
                             </div>
                         </div>
                      </div>
@@ -206,12 +205,12 @@ export default function AdminSettingsPage() {
                             <div>
                                 <Label htmlFor="nagad_rate">Rate (BDT per USD)</Label>
                                 <Input id="nagad_rate" type="number" step="any" {...register('deposit_methods.nagad.rate')} />
-                                {errors['deposit_methods.nagad.rate'] && <p className="text-red-500 text-sm">{errors['deposit_methods.nagad.rate'].message}</p>}
+                                {errors['deposit_methods.nagad.rate'] && <p className="text-red-500 text-sm">{errors['deposit_methods.nagad.rate']?.message}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="nagad_agent">Agent Number</Label>
                                 <Input id="nagad_agent" {...register('deposit_methods.nagad.agent_number')} />
-                                {errors['deposit_methods.nagad.agent_number'] && <p className="text-red-500 text-sm">{errors['deposit_methods.nagad.agent_number'].message}</p>}
+                                {errors['deposit_methods.nagad.agent_number'] && <p className="text-red-500 text-sm">{errors['deposit_methods.nagad.agent_number']?.message}</p>}
                             </div>
                         </div>
                      </div>
@@ -227,17 +226,17 @@ export default function AdminSettingsPage() {
                         <div>
                             <Label htmlFor="free_claim_reward">Free Claim Reward (HC)</Label>
                             <Input id="free_claim_reward" type="number" step="any" {...register('mining.free_claim_reward')} />
-                             {errors['mining.free_claim_reward'] && <p className="text-red-500 text-sm">{errors['mining.free_claim_reward'].message}</p>}
+                             {errors['mining.free_claim_reward'] && <p className="text-red-500 text-sm">{errors['mining.free_claim_reward']?.message}</p>}
                         </div>
                         <div>
                             <Label htmlFor="claim_interval_hours">Claim Interval (Hours)</Label>
                             <Input id="claim_interval_hours" type="number" step="any" {...register('mining.claim_interval_hours')} />
-                            {errors['mining.claim_interval_hours'] && <p className="text-red-500 text-sm">{errors['mining.claim_interval_hours'].message}</p>}
+                            {errors['mining.claim_interval_hours'] && <p className="text-red-500 text-sm">{errors['mining.claim_interval_hours']?.message}</p>}
                         </div>
                          <div>
                             <Label htmlFor="p2p_sell_fee_percent">P2P Sell Fee (%)</Label>
                             <Input id="p2p_sell_fee_percent" type="number" step="any" {...register('mining.p2p_sell_fee_percent')} />
-                            {errors['mining.p2p_sell_fee_percent'] && <p className="text-red-500 text-sm">{errors['mining.p2p_sell_fee_percent'].message}</p>}
+                            {errors['mining.p2p_sell_fee_percent'] && <p className="text-red-500 text-sm">{errors['mining.p2p_sell_fee_percent']?.message}</p>}
                         </div>
                          <div className="grid grid-cols-2 gap-2">
                           <div>
@@ -284,7 +283,7 @@ export default function AdminSettingsPage() {
                      <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Paid Plans</h3>
                         {paidPlanFields.map((field, index) => (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end p-2 border rounded-lg">
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end p-2 border rounded-lg">
                                 <Input {...register(`paidPlans.${index}.id`)} type="hidden" />
                                 <div><Label>Name</Label><Input {...register(`paidPlans.${index}.name`)} placeholder="e.g. Starter Miner" /></div>
                                 <div><Label>Rate</Label><Input {...register(`paidPlans.${index}.rate`)} placeholder="e.g. 0.5 HC/hr" /></div>
@@ -298,7 +297,7 @@ export default function AdminSettingsPage() {
                      <div className="space-y-4">
                         <h3 className="text-lg font-semibold">NFT Plans</h3>
                          {nftPlanFields.map((field, index) => (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end p-2 border rounded-lg">
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end p-2 border rounded-lg">
                                  <Input {...register(`nftPlans.${index}.id`)} type="hidden" />
                                 <div><Label>Name</Label><Input {...register(`nftPlans.${index}.name`)} placeholder="e.g. Bronze NFT" /></div>
                                 <div><Label>Cost (USD)</Label><Input type="number" step="any" {...register(`nftPlans.${index}.cost`)} placeholder="e.g. 5" /></div>
@@ -322,5 +321,3 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
-
-    
