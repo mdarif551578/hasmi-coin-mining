@@ -160,7 +160,7 @@ export function MiningSection() {
                                     </CardHeader>
                                     <CardContent className="space-y-2 flex-1 text-sm">
                                         <p>Cost: <span className="font-bold">${plan.cost}</span></p>
-                                        <p>Return: <span className="font-bold text-primary">${plan.profit}</span></p>
+                                        <p>Return: <span className="font-bold text-primary">${(plan.cost + plan.profit).toFixed(2)}</span></p>
                                     </CardContent>
                                     <CardFooter>
                                         <Button className="w-full h-10" disabled>Purchase</Button>
