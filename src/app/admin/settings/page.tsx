@@ -293,7 +293,7 @@ export default function AdminSettingsPage() {
                                 <Button type="button" variant="destructive" size="icon" onClick={() => removePaidPlan(index)}><Trash2 className="size-4" /></Button>
                             </div>
                         ))}
-                         <Button type="button" variant="outline" size="sm" onClick={() => appendPaidPlan({ name: '', duration: '', price: 0, rate: '' })}><Plus className="mr-2" />Add Paid Plan</Button>
+                         <Button type="button" variant="outline" size="sm" onClick={() => appendPaidPlan({ name: 'New Plan', duration: '30 days', price: 1, rate: '1 HC/hr' })}><Plus className="mr-2" />Add Paid Plan</Button>
                     </div>
                      <div className="space-y-4">
                         <h3 className="text-lg font-semibold">NFT Plans</h3>
@@ -307,7 +307,7 @@ export default function AdminSettingsPage() {
                                 <Button type="button" variant="destructive" size="icon" onClick={() => removeNftPlan(index)}><Trash2 className="size-4" /></Button>
                             </div>
                         ))}
-                         <Button type="button" variant="outline" size="sm" onClick={() => appendNftPlan({ name: '', duration: '', price: 0, cost: 0, profit: 0 })}><Plus className="mr-2" />Add NFT Plan</Button>
+                         <Button type="button" variant="outline" size="sm" onClick={() => appendNftPlan({ name: 'New NFT', duration: '30 days', price: 0, cost: 1, profit: 1.5 })}><Plus className="mr-2" />Add NFT Plan</Button>
                     </div>
                    </CardContent>
                 </Card>
@@ -322,3 +322,5 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+
+    
