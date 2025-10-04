@@ -266,7 +266,7 @@ export default function AdminSettingsPage() {
                                 <div><Label>Name</Label><Input {...register(`paidPlans.${index}.name`)} placeholder="e.g. Starter Miner" /></div>
                                 <div><Label>Rate</Label><Input {...register(`paidPlans.${index}.rate`)} placeholder="e.g. 0.5 HC/hr" /></div>
                                 <div><Label>Duration</Label><Input {...register(`paidPlans.${index}.duration`)} placeholder="e.g. 30 days" /></div>
-                                <div><Label>Price (USD)</Label><Input type="number" {...register(`paidPlans.${index}.price`)} placeholder="e.g. 10" /></div>
+                                <div><Label>Price (USD)</Label><Input type="number" step="any" {...register(`paidPlans.${index}.price`)} placeholder="e.g. 10" /></div>
                                 <Button type="button" variant="destructive" size="icon" onClick={() => removePaidPlan(index)}><Trash2 className="size-4" /></Button>
                             </div>
                         ))}
@@ -278,8 +278,8 @@ export default function AdminSettingsPage() {
                             <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end p-2 border rounded-lg">
                                  <Input {...register(`nftPlans.${index}.id`)} type="hidden" />
                                 <div><Label>Name</Label><Input {...register(`nftPlans.${index}.name`)} placeholder="e.g. Bronze NFT" /></div>
-                                <div><Label>Cost (USD)</Label><Input type="number" {...register(`nftPlans.${index}.cost`)} placeholder="e.g. 5" /></div>
-                                <div><Label>Profit (USD)</Label><Input type="number" {...register(`nftPlans.${index}.profit`)} placeholder="e.g. 7.5" /></div>
+                                <div><Label>Cost (USD)</Label><Input type="number" step="any" {...register(`nftPlans.${index}.cost`)} placeholder="e.g. 5" /></div>
+                                <div><Label>Profit (USD)</Label><Input type="number" step="any" {...register(`nftPlans.${index}.profit`)} placeholder="e.g. 7.5" /></div>
                                 <div><Label>Duration</Label><Input {...register(`nftPlans.${index}.duration`)} placeholder="e.g. 30 days" /></div>
                                 <Button type="button" variant="destructive" size="icon" onClick={() => removeNftPlan(index)}><Trash2 className="size-4" /></Button>
                             </div>
