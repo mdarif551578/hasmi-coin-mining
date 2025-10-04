@@ -86,8 +86,13 @@ export function useAdminActions() {
 
                 if (action === 'rejected') {
                     transaction.update(requestRef, { status: 'rejected' });
+                    // On rejection, we need to give the HC back to the seller, as it was locked
+                    // when the listing was created. But since our current logic doesn't lock it, we do nothing.
+                    // And we must refund the buyer's USD.
+                    transaction.update(buyerRef, { 
+                        usd_balance: increment(request.totalPrice),
+                    });
                 } else { // Approved
-                    const sellerData = sellerDoc.data();
                     const buyerData = buyerDoc.data();
                     
                     if (buyerData.usd_balance < request.totalPrice) {
@@ -97,11 +102,13 @@ export function useAdminActions() {
                     // The HC is held by the system, not the seller, so we don't check seller balance.
                     // Admin approval is the trigger.
 
-                    // Update balances
+                    // Update balances:
+                    // Buyer: Loses USD, Gains HC
                     transaction.update(buyerRef, { 
                         usd_balance: increment(-request.totalPrice),
-                        // HC is credited via the buy_requests listener on the client
+                        wallet_balance: increment(request.amount), // Give buyer the HC
                     });
+                    // Seller: Gains USD
                     transaction.update(sellerRef, {
                         usd_balance: increment(request.totalPrice),
                     });
@@ -130,13 +137,16 @@ export function useAdminActions() {
                 if (!submissionDoc.exists()) throw new Error("Submission not found.");
 
                 const submissionData = submissionDoc.data();
+                if (submissionData.status !== 'pending') {
+                  throw new Error("This submission has already been processed.");
+                }
                 
-                // Add the reward amount to the submission for the transaction hook to read
                 const taskRef = doc(db, 'tasks', submissionData.taskId);
                 const taskDoc = await transaction.get(taskRef);
                 if (!taskDoc.exists()) throw new Error("Task not found.");
                 const reward = taskDoc.data().reward;
 
+                // Add the reward amount to the submission for the transaction hook to read
                 transaction.update(submissionRef, { status: action, reward: reward });
                 
                 if (action === 'approved') {

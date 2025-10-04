@@ -1,15 +1,15 @@
 
 'use client';
 import React, { useMemo } from 'react';
-import { orderBy } from 'firebase/firestore';
+import { orderBy, doc, runTransaction, increment } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { useAdminActions } from '@/hooks/admin/use-admin-actions';
+import { useToast } from '@/hooks/use-toast';
 import { Check, X, ArrowRight } from 'lucide-react';
-import { increment } from 'firebase/firestore';
 import { useAdminPagination } from '@/hooks/admin/use-admin-pagination';
 
 const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loading }: { canPrev: boolean, canNext: boolean, currentPage: number, onPrev: () => void, onNext: () => void, loading: boolean }) => (
@@ -38,18 +38,44 @@ const PaginationControls = ({ canPrev, canNext, currentPage, onPrev, onNext, loa
 export default function AdminExchangesPage() {
   const queryConstraints = useMemo(() => [orderBy('createdAt', 'desc')], []);
   const { data, loading, nextPage, prevPage, currentPage, canNext, canPrev } = useAdminPagination('exchange_requests', queryConstraints);
-  const { loading: actionLoading, handleRequest } = useAdminActions();
+  const [actionLoading, setActionLoading] = React.useState(false);
+  const { toast } = useToast();
 
   const requests = data.filter(req => req.status === 'pending');
 
-  const onAction = (docId: string, action: 'approved' | 'rejected', req: any) => {
-    const updateData = action === 'approved' ? {
-        usd_balance: increment(-req.usdAmount),
-        wallet_balance: increment(req.hcAmount)
-    } : {
-        usd_balance: increment(req.usdAmount), // Return USD on rejection
-    };
-    handleRequest('exchange_requests', docId, action, req.userId, updateData);
+  const onAction = async (req: any, action: 'approved' | 'rejected') => {
+    setActionLoading(true);
+    const reqRef = doc(db, 'exchange_requests', req.id);
+    const userRef = doc(db, 'users', req.userId);
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) throw new Error("User not found");
+
+        if (action === 'approved') {
+          if (userDoc.data().usd_balance < req.usdAmount) {
+            throw new Error("User has insufficient USD to complete this exchange.");
+          }
+          // Deduct USD and add HC
+          transaction.update(userRef, {
+            usd_balance: increment(-req.usdAmount),
+            wallet_balance: increment(req.hcAmount)
+          });
+          transaction.update(reqRef, { status: 'approved' });
+        } else { // Rejected
+          // Just update the request status. No balance change needed as funds weren't held.
+          transaction.update(reqRef, { status: 'rejected' });
+        }
+      });
+
+      toast({ title: 'Success', description: `Exchange request has been ${action}.` });
+    } catch (error: any) {
+      console.error("Error processing exchange request:", error);
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   return (
@@ -95,10 +121,10 @@ export default function AdminExchangesPage() {
                   </TableCell>
                   <TableCell data-label="Rate">1 USD = {req.rate} HC</TableCell>
                   <TableCell data-label="Actions" className="text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600" onClick={() => onAction(req.id, 'approved', req)} disabled={actionLoading}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600" onClick={() => onAction(req, 'approved')} disabled={actionLoading}>
                         <Check />
                     </Button>
-                     <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => onAction(req.id, 'rejected', req)} disabled={actionLoading}>
+                     <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => onAction(req, 'rejected')} disabled={actionLoading}>
                         <X />
                     </Button>
                   </TableCell>
