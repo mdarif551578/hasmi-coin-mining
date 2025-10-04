@@ -7,12 +7,14 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import type { MarketListing, BuyRequest } from '@/lib/types';
 import { useToast } from './use-toast';
+import { useSettings } from './use-settings';
 
 const LISTINGS_PER_PAGE = 15;
 
 export function useMarketplace() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { settings } = useSettings();
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [userBuyRequests, setUserBuyRequests] = useState<BuyRequest[]>([]);
   const [allPendingBuyRequests, setAllPendingBuyRequests] = useState<BuyRequest[]>([]);
@@ -126,6 +128,9 @@ export function useMarketplace() {
       return;
     }
 
+    const feePercent = settings?.mining?.p2p_sell_fee_percent || 0;
+    const feeAmount = (amount * rate) * (feePercent / 100);
+
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, 'market_listings'), {
@@ -133,6 +138,7 @@ export function useMarketplace() {
         sellerName: userDisplayName,
         amount,
         rate,
+        fee: feeAmount,
         status: 'pending',
         createdAt: serverTimestamp(),
       });

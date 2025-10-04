@@ -1,10 +1,14 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Rocket } from 'lucide-react';
+import { useSettings } from '@/hooks/use-settings';
+import { Skeleton } from '../ui/skeleton';
 
 export function TokenLaunchCountdown() {
+    const { settings, loading } = useSettings();
     const [timeRemaining, setTimeRemaining] = useState({
         days: 0,
         hours: 0,
@@ -13,8 +17,9 @@ export function TokenLaunchCountdown() {
     });
 
     useEffect(() => {
-        const launchDate = new Date();
-        launchDate.setDate(launchDate.getDate() + 30); // Set launch date 30 days from now
+        if (!settings?.mining?.token_launch_date) return;
+
+        const launchDate = settings.mining.token_launch_date.toDate();
 
         const timer = setInterval(() => {
             const now = new Date().getTime();
@@ -35,7 +40,7 @@ export function TokenLaunchCountdown() {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, []);
+    }, [settings]);
 
     const formatUnit = (value: number, label: string) => (
         <div className="flex flex-col items-center">
@@ -52,12 +57,14 @@ export function TokenLaunchCountdown() {
             </CardHeader>
             <CardContent>
                 <p className="text-sm text-center text-muted-foreground mb-4">The official Hasmi Coin will launch in:</p>
-                <div className="grid grid-cols-4 gap-2 text-center">
-                    {formatUnit(timeRemaining.days, "Days")}
-                    {formatUnit(timeRemaining.hours, "Hours")}
-                    {formatUnit(timeRemaining.minutes, "Mins")}
-                    {formatUnit(timeRemaining.seconds, "Secs")}
-                </div>
+                {loading ? <Skeleton className="h-14 w-full" /> : (
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                        {formatUnit(timeRemaining.days, "Days")}
+                        {formatUnit(timeRemaining.hours, "Hours")}
+                        {formatUnit(timeRemaining.minutes, "Mins")}
+                        {formatUnit(timeRemaining.seconds, "Secs")}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

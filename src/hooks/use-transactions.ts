@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -41,6 +42,8 @@ export function useTransactions() {
       { name: 'referral_bonuses_referee', config: { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' } },
       { name: 'buy_requests_buyer', config: { type: 'marketplace-buy', amountField: 'totalPrice', currency: 'USD', userIdField: 'buyerId', statusField: 'status', statusValue: 'approved' } },
       { name: 'market_listings_seller', config: { type: 'marketplace-sell', amountField: 'totalPrice', currency: 'USD', userIdField: 'sellerId', statusField: 'status', statusValue: 'sold' } },
+      { name: 'mining_claims', config: { type: 'mining', amountField: 'amount', currency: 'HC', userIdField: 'userId' } },
+
     ];
 
     let newTransactions: Transaction[] = isInitialLoad ? [] : [...transactions];

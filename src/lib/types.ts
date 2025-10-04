@@ -74,6 +74,7 @@ export type MarketListing = {
   status: 'pending' | 'open' | 'sold' | 'cancelled';
   createdAt: any;
   totalPrice?: number;
+  fee?: number;
 };
 
 export type BuyRequest = {
@@ -137,4 +138,11 @@ export type ReferralBonus = {
     refereeBonus: number;
     status: 'pending' | 'approved' | 'rejected';
     createdAt: any;
+}
+
+export type MiningClaim = {
+  id?: string;
+  userId: string;
+  amount: number;
+  createdAt: any;
 }
