@@ -13,8 +13,11 @@ export function UserAssetsCard() {
 
   const calculateEndDate = (startDate: Date, durationString: string): Date => {
     const durationParts = durationString.split(' ');
+    if (durationParts.length < 2) return startDate;
     const durationValue = parseInt(durationParts[0], 10);
     const durationUnit = durationParts[1].toLowerCase();
+
+    if (isNaN(durationValue)) return startDate;
 
     const duration = { [durationUnit]: durationValue };
     return add(startDate, duration);
@@ -40,15 +43,14 @@ export function UserAssetsCard() {
             return (
             <div key={nft.id} className="p-3 bg-card-foreground/5 rounded-lg">
               <p className="font-semibold text-sm">{nft.planName}</p>
-              <div className="flex justify-between items-end text-xs text-muted-foreground">
+              <div className="flex justify-between items-end text-xs text-muted-foreground mt-1">
                   <span>Cost: ${nft.cost.toFixed(2)}</span>
                   <span className="text-primary font-medium">Return: ${(nft.cost + (nft.profit || 0)).toFixed(2)}</span>
               </div>
-               {endDate && (
-                <div className="text-xs text-muted-foreground mt-1">
-                    Ends on: {format(endDate, 'PP')}
-                </div>
-              )}
+               <div className="text-xs text-muted-foreground mt-2 border-t border-muted pt-2">
+                    {startDate && <p>Starts: {format(startDate, 'PPp')}</p>}
+                    {endDate && <p>Ends: {format(endDate, 'PPp')}</p>}
+              </div>
             </div>
           )})
         ) : (
