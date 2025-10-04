@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, runTransaction, writeBatch, getDoc, collection, query, where, getDocs, increment } from 'firebase/firestore';
+import { doc, runTransaction, writeBatch, getDoc, collection, query, where, getDocs, increment, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '../use-toast';
 import type { BuyRequest, MarketListing } from '@/lib/types';
 
@@ -80,6 +80,9 @@ export function useAdminActions() {
                 if (!reqDoc.exists() || !listingDoc.exists() || !sellerDoc.exists() || !buyerDoc.exists()) {
                     throw new Error("One or more required documents could not be found.");
                 }
+                if(reqDoc.data().status !== 'pending') {
+                    throw new Error("This request has already been processed.");
+                }
 
                 if (action === 'rejected') {
                     transaction.update(requestRef, { status: 'rejected' });
@@ -90,18 +93,17 @@ export function useAdminActions() {
                     if (buyerData.usd_balance < request.totalPrice) {
                         throw new Error("Buyer has insufficient USD balance.");
                     }
-                     if (sellerData.wallet_balance < request.amount) {
-                        throw new Error("Seller has insufficient HC balance.");
-                    }
+
+                    // The HC is held by the system, not the seller, so we don't check seller balance.
+                    // Admin approval is the trigger.
 
                     // Update balances
                     transaction.update(buyerRef, { 
                         usd_balance: increment(-request.totalPrice),
-                        wallet_balance: increment(request.amount)
+                        // HC is credited via the buy_requests listener on the client
                     });
                     transaction.update(sellerRef, {
                         usd_balance: increment(request.totalPrice),
-                        wallet_balance: increment(-request.amount)
                     });
 
                     // Update statuses
@@ -128,18 +130,20 @@ export function useAdminActions() {
                 if (!submissionDoc.exists()) throw new Error("Submission not found.");
 
                 const submissionData = submissionDoc.data();
-                transaction.update(submissionRef, { status: action });
+                
+                // Add the reward amount to the submission for the transaction hook to read
+                const taskRef = doc(db, 'tasks', submissionData.taskId);
+                const taskDoc = await transaction.get(taskRef);
+                if (!taskDoc.exists()) throw new Error("Task not found.");
+                const reward = taskDoc.data().reward;
+
+                transaction.update(submissionRef, { status: action, reward: reward });
                 
                 if (action === 'approved') {
-                    const taskRef = doc(db, 'tasks', submissionData.taskId);
-                    const taskDoc = await transaction.get(taskRef);
-                    if (!taskDoc.exists()) throw new Error("Task not found.");
-                    
                     const userRef = doc(db, 'users', submissionData.userId);
                     const userDoc = await transaction.get(userRef);
                     if (!userDoc.exists()) throw new Error("User not found.");
 
-                    const reward = taskDoc.data().reward;
                     transaction.update(userRef, { wallet_balance: increment(reward) });
                 }
              });

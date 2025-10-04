@@ -6,7 +6,7 @@ export type Transaction = {
   id: string;
   type: 'deposit' | 'withdraw' | 'mining' | 'task' | 'marketplace-sell' | 'marketplace-buy' | 'referral' | 'nft-reward' | 'exchange';
   amount: number;
-  status: 'pending' | 'completed' | 'failed' | 'approved' | 'rejected' | 'sold';
+  status: 'pending' | 'completed' | 'failed' | 'approved' | 'rejected' | 'sold' | 'cancelled';
   date: string;
   currency?: 'USD' | 'HC';
 };
@@ -56,8 +56,8 @@ export type TaskSubmission = {
     submissionText: string;
     status: 'pending' | 'approved' | 'rejected';
     createdAt: any;
+    reward: number; // We need this to create the transaction
     taskTitle?: string;
-    taskReward?: number;
     user?: {
       displayName: string;
       email: string;

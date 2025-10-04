@@ -1,14 +1,13 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, onSnapshot, orderBy, limit, startAfter, DocumentData, QuerySnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import type { Transaction } from '@/lib/types';
 
-const TRANSACTIONS_PER_PAGE = 10;
+const TRANSACTIONS_PER_PAGE = 20; // Fetch a decent number of items from each source
 
 function formatTimestamp(timestamp: any): string {
     if (!timestamp) return new Date().toISOString();
@@ -22,111 +21,124 @@ export function useTransactions() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [lastDocs, setLastDocs] = useState<Record<string, DocumentData | null>>({});
 
-  const fetchTransactions = useCallback(async (isInitialLoad = false) => {
+  useEffect(() => {
     if (!user) {
-      setLoading(false);
-      setTransactions([]);
-      return;
+        setTransactions([]);
+        setLoading(false);
+        return;
     }
 
     setLoading(true);
 
     const collectionsToQuery = [
-      { name: 'deposits', config: { type: 'deposit', amountField: 'amount', currency: 'USD', userIdField: 'userId' } },
-      { name: 'withdrawals', config: { type: 'withdraw', amountField: 'amount', currency: 'USD', userIdField: 'userId' } },
-      { name: 'exchange_requests', config: { type: 'exchange', amountField: 'hcAmount', currency: 'HC', userIdField: 'userId' } },
-      { name: 'referral_bonuses_referrer', config: { type: 'referral', amountField: 'referrerBonus', currency: 'HC', userIdField: 'referrerId' } },
-      { name: 'referral_bonuses_referee', config: { type: 'referral', amountField: 'refereeBonus', currency: 'HC', userIdField: 'refereeId' } },
-      { name: 'buy_requests_buyer', config: { type: 'marketplace-buy', amountField: 'totalPrice', currency: 'USD', userIdField: 'buyerId', statusField: 'status', statusValue: 'approved' } },
-      { name: 'market_listings_seller', config: { type: 'marketplace-sell', amountField: 'totalPrice', currency: 'USD', userIdField: 'sellerId', statusField: 'status', statusValue: 'sold' } },
-      { name: 'mining_claims', config: { type: 'mining', amountField: 'amount', currency: 'HC', userIdField: 'userId' } },
-
+        { name: 'deposits', config: { type: 'deposit', amountField: 'amount', currency: 'USD' }},
+        { name: 'withdrawals', config: { type: 'withdraw', amountField: 'amount', currency: 'USD' }},
+        { name: 'exchange_requests', config: { type: 'exchange', amountField: 'hcAmount', currency: 'HC' }},
+        { name: 'task_submissions', config: { type: 'task', amountField: 'reward', currency: 'HC', statusField: 'status', statusValue: 'approved' }},
+        { name: 'mining_claims', config: { type: 'mining', amountField: 'amount', currency: 'HC' }},
     ];
 
-    let newTransactions: Transaction[] = isInitialLoad ? [] : [...transactions];
-    const newLastDocs = { ...lastDocs };
-    let anyMore = false;
+    const unsubscribers: (() => void)[] = [];
+    let allTransactions: Transaction[] = [];
 
-    const promises = collectionsToQuery.map(async ({ name, config }) => {
-      let collName = name;
-      if (name.includes('referral_bonuses')) collName = 'referral_bonuses';
-      if (name.includes('buy_requests')) collName = 'buy_requests';
-      if (name.includes('market_listings')) collName = 'market_listings';
-      
-      const constraints = [where(config.userIdField, '==', user.uid)];
-      if (config.statusField) {
-        constraints.push(where(config.statusField, '==', config.statusValue));
-      }
-      constraints.push(limit(TRANSACTIONS_PER_PAGE));
+    const processAndSetTransactions = () => {
+        // Sort all collected transactions by date and take the most recent ones
+        allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setTransactions(allTransactions.slice(0, TRANSACTIONS_PER_PAGE * 2)); // Keep a reasonable total
+        setLoading(false);
+    };
 
-
-      let q = query(collection(db, collName), ...constraints);
-
-      if (!isInitialLoad && lastDocs[name]) {
-        q = query(q, startAfter(lastDocs[name]));
-      }
-
-      try {
-        const snapshot = await getDocs(q);
-
-        if (snapshot.docs.length > 0) {
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const amount = config.type === 'marketplace-sell' 
-              ? data.amount * data.rate 
-              : data[config.amountField];
-
-            const transaction: Transaction = {
-              id: `${config.type}-${doc.id}`,
-              type: config.type,
-              amount: amount,
-              status: data.status,
-              date: formatTimestamp(data.createdAt),
-              currency: config.currency,
-            };
-            if (!newTransactions.some(t => t.id === transaction.id)) {
-              newTransactions.push(transaction);
-            }
-          });
-
-          newLastDocs[name] = snapshot.docs[snapshot.docs.length - 1];
-          if (snapshot.docs.length === TRANSACTIONS_PER_PAGE) {
-            anyMore = true;
-          }
+    collectionsToQuery.forEach(({ name, config }) => {
+        const constraints = [where('userId', '==', user.uid)];
+        if (config.statusField) {
+            constraints.push(where(config.statusField, '==', config.statusValue));
         }
-      } catch (error) {
-        console.error(`Error fetching from ${collName}:`, error);
-      }
+        
+        const q = query(collection(db, name), ...constraints, orderBy('createdAt', 'desc'), limit(TRANSACTIONS_PER_PAGE));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedTransactions: Transaction[] = snapshot.docs.map(doc => {
+                 const data = doc.data();
+                 return {
+                    id: `${config.type}-${doc.id}`,
+                    type: config.type as Transaction['type'],
+                    amount: data[config.amountField],
+                    status: data.status,
+                    date: formatTimestamp(data.createdAt),
+                    currency: config.currency as 'USD' | 'HC',
+                 }
+            });
+            
+            // Remove old entries from this source and add new ones
+            allTransactions = allTransactions.filter(tx => !tx.id.startsWith(config.type));
+            allTransactions.push(...fetchedTransactions);
+            processAndSetTransactions();
+        });
+        unsubscribers.push(unsubscribe);
     });
 
-    await Promise.all(promises);
-    
-    newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    setTransactions(newTransactions);
-    setLastDocs(newLastDocs);
-    setHasMore(anyMore);
-    setLoading(false);
-  }, [user, transactions, lastDocs]);
+    // Handle P2P Marketplace transactions (a bit more complex)
+    const handleP2PTransactions = () => {
+        const buyerQuery = query(
+            collection(db, 'buy_requests'),
+            where('buyerId', '==', user.uid),
+            where('status', '==', 'approved'),
+            orderBy('createdAt', 'desc'),
+            limit(TRANSACTIONS_PER_PAGE)
+        );
 
-  useEffect(() => {
-    if (user) {
-        fetchTransactions(true);
-    } else {
-        setTransactions([]);
-        setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        const sellerQuery = query(
+            collection(db, 'buy_requests'),
+            where('sellerId', '==', user.uid),
+            where('status', '==', 'approved'),
+            orderBy('createdAt', 'desc'),
+            limit(TRANSACTIONS_PER_PAGE)
+        );
+
+        const unsubBuyer = onSnapshot(buyerQuery, (snapshot) => {
+            const buyerTransactions: Transaction[] = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: `marketplace-buy-${doc.id}`,
+                    type: 'marketplace-buy',
+                    amount: data.amount, // User received HC
+                    status: 'completed',
+                    date: formatTimestamp(data.createdAt),
+                    currency: 'HC'
+                };
+            });
+            allTransactions = allTransactions.filter(tx => !tx.id.startsWith('marketplace-buy'));
+            allTransactions.push(...buyerTransactions);
+            processAndSetTransactions();
+        });
+
+        const unsubSeller = onSnapshot(sellerQuery, (snapshot) => {
+            const sellerTransactions: Transaction[] = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: `marketplace-sell-${doc.id}`,
+                    type: 'marketplace-sell',
+                    amount: data.totalPrice, // User received USD
+                    status: 'completed',
+                    date: formatTimestamp(data.createdAt),
+                    currency: 'USD'
+                };
+            });
+            allTransactions = allTransactions.filter(tx => !tx.id.startsWith('marketplace-sell'));
+            allTransactions.push(...sellerTransactions);
+            processAndSetTransactions();
+        });
+        
+        unsubscribers.push(unsubBuyer, unsubSeller);
+    };
+
+    handleP2PTransactions();
+
+    return () => unsubscribers.forEach(unsub => unsub());
+
   }, [user]);
 
-  const loadMore = () => {
-    if (!loading && hasMore) {
-      fetchTransactions(false);
-    }
-  };
-
-  return { transactions, loading, loadMore, hasMore };
+  // hasMore and loadMore are no longer needed with real-time listeners and simplified logic
+  return { transactions, loading, loadMore: () => {}, hasMore: false };
 }

@@ -17,8 +17,8 @@ const TransactionIcon = ({ type }: { type: Transaction['type'] }) => {
         mining: <Cog className="size-4 text-muted-foreground" />,
         task: <CheckSquare className="size-4 text-muted-foreground" />,
         exchange: <Repeat className="size-4 text-muted-foreground" />,
-        'marketplace-sell': <Store className="size-4 text-muted-foreground" />,
-        'marketplace-buy': <Store className="size-4 text-muted-foreground" />,
+        'marketplace-sell': <ArrowDownLeft className="size-4 text-primary" />,
+        'marketplace-buy': <ArrowUpRight className="size-4 text-destructive" />,
         referral: <Users className="size-4 text-primary" />,
         'nft-reward': <Gem className="size-4 text-primary" />,
     };
@@ -44,15 +44,16 @@ const getStatusBadgeVariant = (status: Transaction['status']): "default" | "seco
 
 
 const isPositive = (type: Transaction['type'], currency: Transaction['currency']) => {
-    if (currency === 'USD') {
-        return ['deposit', 'marketplace-sell'].includes(type);
-    }
-    // Assume HC for others
-    return !['withdraw', 'exchange'].includes(type);
+    if (type === 'marketplace-buy') return true; // You receive HC
+    if (type === 'marketplace-sell') return true; // You receive USD
+    if (type === 'withdraw') return false;
+    if (type === 'exchange') return false; // You spend USD
+    
+    return true; // Deposits, mining, tasks, referrals are all gains
 };
 
 export function TransactionsTable({ className }: { className?: string }) {
-    const { transactions, loading, loadMore, hasMore } = useTransactions();
+    const { transactions, loading } = useTransactions();
 
     return (
         <Card className={cn("h-full flex flex-col rounded-2xl shadow-m", className)}>
@@ -108,15 +109,12 @@ export function TransactionsTable({ className }: { className?: string }) {
                     </Table>
                 </div>
             </CardContent>
-             {(hasMore || loading) && (
+             {loading && transactions.length > 0 && (
                 <CardFooter className="justify-center">
-                    <Button
-                        variant="outline"
-                        onClick={loadMore}
-                        disabled={loading}
-                    >
-                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</> : 'Load More'}
-                    </Button>
+                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                     <span>Loading new transactions...</span>
+                   </div>
                 </CardFooter>
             )}
         </Card>
