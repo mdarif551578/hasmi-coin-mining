@@ -112,6 +112,7 @@ export function MiningSection() {
                 planName: plan.name,
                 planType: type,
                 cost: cost,
+                profit: plan.profit,
                 status: 'pending',
                 createdAt: serverTimestamp(),
             });

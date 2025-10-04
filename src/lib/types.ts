@@ -154,6 +154,7 @@ export type PlanPurchaseRequest = {
   planName: string;
   planType: 'paid' | 'nft';
   cost: number;
+  profit?: number;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any;
 }
