@@ -5,14 +5,18 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Zap, Gem, ShoppingCart, Loader2 } from 'lucide-react';
+import { Zap, Gem, ShoppingCart, Loader2, BadgeHelp, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useUserData } from '@/hooks/use-user-data';
-import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, updateDoc, addDoc, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { Skeleton } from '../ui/skeleton';
+import { Badge } from '../ui/badge';
+import type { PlanPurchaseRequest } from '@/lib/types';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+
 
 export function MiningSection() {
     const { toast } = useToast();
@@ -20,6 +24,22 @@ export function MiningSection() {
     const { userData, loading: userLoading } = useUserData();
     const { user } = useAuth();
     const [isClaiming, setIsClaiming] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [pendingPlanPurchases, setPendingPlanPurchases] = useState<PlanPurchaseRequest[]>([]);
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, 'plan_purchases'), where('userId', '==', user.uid), where('status', '==', 'pending'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const purchases: PlanPurchaseRequest[] = [];
+            snapshot.forEach(doc => {
+                purchases.push({ id: doc.id, ...doc.data() } as PlanPurchaseRequest);
+            });
+            setPendingPlanPurchases(purchases);
+        });
+        return () => unsubscribe();
+    }, [user]);
 
     const claimIntervalHours = settings?.mining?.claim_interval_hours || 2;
     const claimIntervalSeconds = claimIntervalHours * 60 * 60;
@@ -62,7 +82,6 @@ export function MiningSection() {
                 title: "Claim Successful!",
                 description: `You've received ${freeClaimReward} Hasmi Coins.`,
             });
-             // The onSnapshot listener for userData will update the timer automatically
         } catch (error) {
             console.error("Error claiming reward:", error);
             toast({ variant: 'destructive', title: "Claim Failed", description: "Could not claim your reward." });
@@ -70,6 +89,57 @@ export function MiningSection() {
             setIsClaiming(false);
         }
     };
+    
+    const handlePurchase = async (plan: any, type: 'paid' | 'nft') => {
+        if (!user || !userData) return;
+
+        const cost = type === 'paid' ? plan.price : plan.cost;
+
+        if (userData.usd_balance < cost) {
+            toast({
+                variant: 'destructive',
+                title: 'Insufficient Funds',
+                description: `You need $${cost.toFixed(2)} to purchase this plan.`,
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await addDoc(collection(db, 'plan_purchases'), {
+                userId: user.uid,
+                planId: plan.id,
+                planName: plan.name,
+                planType: type,
+                cost: cost,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+            });
+            toast({
+                title: 'Request Submitted',
+                description: `Your request to purchase ${plan.name} is pending approval.`,
+            });
+        } catch (error) {
+            console.error('Error purchasing plan:', error);
+            toast({ variant: 'destructive', title: 'Request Failed', description: 'Could not submit your purchase request.' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+     const cancelPurchase = async (purchaseId: string) => {
+        setIsSubmitting(true);
+        try {
+            await deleteDoc(doc(db, 'plan_purchases', purchaseId));
+            toast({ title: 'Request Cancelled', description: 'Your purchase request has been cancelled.' });
+        } catch (error) {
+            console.error('Error cancelling purchase:', error);
+            toast({ variant: 'destructive', title: 'Cancellation Failed', description: 'Could not cancel your request.' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
 
     const progress = ((claimIntervalSeconds - timeRemaining) / claimIntervalSeconds) * 100;
     const canClaim = timeRemaining === 0;
@@ -82,6 +152,40 @@ export function MiningSection() {
                 <CardDescription>Claim rewards and upgrade your mining capabilities.</CardDescription>
             </CardHeader>
             <CardContent>
+                 {pendingPlanPurchases.length > 0 && (
+                    <div className="mb-6">
+                        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">My Pending Requests</h3>
+                        <div className="space-y-2">
+                            {pendingPlanPurchases.map(req => (
+                                <div key={req.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                    <div>
+                                        <p className="font-semibold text-sm">{req.planName}</p>
+                                        <p className="text-xs text-muted-foreground">Cost: ${req.cost.toFixed(2)}</p>
+                                    </div>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Cancel Request?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Are you sure you want to cancel your purchase request for the {req.planName}?
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Back</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => cancelPurchase(req.id)} className="bg-destructive hover:bg-destructive/90">Cancel Request</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <Tabs defaultValue="free" className="w-full">
                     <TabsList className="grid w-full grid-cols-3 h-auto">
                         <TabsTrigger value="free" className="py-2 gap-1 text-xs"><Zap className="size-4" />Free</TabsTrigger>
@@ -122,7 +226,7 @@ export function MiningSection() {
                                 </CardContent>
                                 <CardFooter>
                                     <Button className="w-full h-10" disabled={!canClaim || isClaiming} onClick={handleClaim}>
-                                        {isClaiming && <Loader2 className="animate-spin mr-2"/>}
+                                        {isClaiming ? <Loader2 className="animate-spin mr-2"/> : <Zap className="mr-2" />}
                                         Claim {freeClaimReward} HC
                                     </Button>
                                 </CardFooter>
@@ -132,7 +236,10 @@ export function MiningSection() {
                     </TabsContent>
                     <TabsContent value="paid" className="mt-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                             {isLoading ? Array.from({length: 2}).map((_,i) => <Skeleton key={i} className="h-48 w-full"/>) : settings?.mining?.paidPlans?.map((plan: any) => (
+                             {isLoading ? Array.from({length: 2}).map((_,i) => <Skeleton key={i} className="h-48 w-full"/>) : settings?.mining?.paidPlans?.map((plan: any) => {
+                                const isPending = pendingPlanPurchases.some(p => p.planId === plan.id);
+                                const isCurrentPlan = userData?.mining_plan === plan.name;
+                                return (
                                 <Card key={plan.id} className="flex flex-col bg-card-foreground/5 rounded-xl">
                                     <CardHeader>
                                         <CardTitle className="text-base">{plan.name}</CardTitle>
@@ -143,16 +250,20 @@ export function MiningSection() {
                                         <p className="text-lg font-bold text-primary">${plan.price}</p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-10" disabled>Subscribe</Button>
+                                        <Button className="w-full h-10" onClick={() => handlePurchase(plan, 'paid')} disabled={isSubmitting || isPending || isCurrentPlan}>
+                                            {isSubmitting ? <Loader2 className="animate-spin" /> : isPending ? 'Pending Approval' : isCurrentPlan ? 'Active Plan' : 'Subscribe'}
+                                        </Button>
                                     </CardFooter>
                                 </Card>
-                            ))}
+                             )})}
                         </div>
-                         {!isLoading && !settings?.mining?.paidPlans?.length && <p className="text-center text-muted-foreground py-8">No paid plans available.</p>}
+                         {!isLoading && (!settings?.mining?.paidPlans || settings.mining.paidPlans.length === 0) && <p className="text-center text-muted-foreground py-8">No paid plans available.</p>}
                     </TabsContent>
                     <TabsContent value="nft" className="mt-4">
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                             {isLoading ? Array.from({length: 2}).map((_,i) => <Skeleton key={i} className="h-48 w-full"/>) : settings?.mining?.nftPlans?.map((plan: any) => (
+                             {isLoading ? Array.from({length: 2}).map((_,i) => <Skeleton key={i} className="h-48 w-full"/>) : settings?.mining?.nftPlans?.map((plan: any) => {
+                                const isPending = pendingPlanPurchases.some(p => p.planId === plan.id);
+                                return (
                                 <Card key={plan.id} className="flex flex-col bg-card-foreground/5 rounded-xl">
                                     <CardHeader>
                                         <CardTitle className="text-base">{plan.name}</CardTitle>
@@ -163,17 +274,17 @@ export function MiningSection() {
                                         <p>Return: <span className="font-bold text-primary">${(plan.cost + plan.profit).toFixed(2)}</span></p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button className="w-full h-10" disabled>Purchase</Button>
+                                        <Button className="w-full h-10" onClick={() => handlePurchase(plan, 'nft')} disabled={isSubmitting || isPending}>
+                                            {isSubmitting ? <Loader2 className="animate-spin" /> : isPending ? 'Pending Approval' : 'Purchase'}
+                                        </Button>
                                     </CardFooter>
                                 </Card>
-                            ))}
+                            )})}
                         </div>
-                        {!isLoading && !settings?.mining?.nftPlans?.length && <p className="text-center text-muted-foreground py-8">No NFT plans available.</p>}
+                        {!isLoading && (!settings?.mining?.nftPlans || settings.mining.nftPlans.length === 0) && <p className="text-center text-muted-foreground py-8">No NFT plans available.</p>}
                     </TabsContent>
                 </Tabs>
             </CardContent>
         </Card>
     );
 }
-
-    

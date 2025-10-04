@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useAdminDashboard } from "@/hooks/admin/use-admin-dashboard";
-import { ArrowDownLeft, ArrowUpRight, CheckSquare, Loader2, Repeat, Store, Users } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, CheckSquare, Loader2, Repeat, Store, Users, Shapes } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboardPage() {
@@ -50,6 +50,7 @@ export default function AdminDashboardPage() {
                 <StatCard title="Pending Listings" value={counts.pendingListings} icon={Store} href="/admin/marketplace" isLoading={loading} />
                  <StatCard title="Pending Buy Requests" value={counts.pendingBuyRequests} icon={Store} href="/admin/marketplace" isLoading={loading} />
                  <StatCard title="Pending Task Submissions" value={counts.pendingTaskSubmissions} icon={CheckSquare} href="/admin/tasks" isLoading={loading} />
+                 <StatCard title="Pending Plan Requests" value={counts.pendingPlanPurchases} icon={Shapes} href="/admin/plans" isLoading={loading} />
             </div>
         </div>
     );

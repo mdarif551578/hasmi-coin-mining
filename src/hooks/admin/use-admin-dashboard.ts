@@ -14,6 +14,7 @@ export function useAdminDashboard() {
     pendingListings: 0,
     pendingBuyRequests: 0,
     pendingTaskSubmissions: 0,
+    pendingPlanPurchases: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +29,7 @@ export function useAdminDashboard() {
           pendingListings: query(collection(db, 'market_listings'), where('status', '==', 'pending')),
           pendingBuyRequests: query(collection(db, 'buy_requests'), where('status', '==', 'pending')),
           pendingTaskSubmissions: query(collection(db, 'task_submissions'), where('status', '==', 'pending')),
+          pendingPlanPurchases: query(collection(db, 'plan_purchases'), where('status', '==', 'pending')),
         };
 
         const promises = Object.entries(collectionsToCount).map(async ([key, coll]) => {
@@ -64,6 +66,7 @@ export function useAdminDashboard() {
       createListener('market_listings', 'pendingListings'),
       createListener('buy_requests', 'pendingBuyRequests'),
       createListener('task_submissions', 'pendingTaskSubmissions'),
+      createListener('plan_purchases', 'pendingPlanPurchases'),
       // For total users, a full recount is still best
       onSnapshot(collection(db, 'users'), () => {
          getCountFromServer(collection(db, 'users')).then(snap => {

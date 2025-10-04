@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, ArrowDownLeft, ArrowUpRight, Repeat, Store, CheckSquare, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, ArrowDownLeft, ArrowUpRight, Repeat, Store, CheckSquare, Settings, LogOut, Shapes } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
@@ -17,6 +17,7 @@ const navItems = [
     { href: "/admin/exchanges", label: "Exchanges", icon: Repeat },
     { href: "/admin/marketplace", label: "Marketplace", icon: Store },
     { href: "/admin/tasks", label: "Tasks", icon: CheckSquare },
+    { href: "/admin/plans", label: "Plan Requests", icon: Shapes },
     { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

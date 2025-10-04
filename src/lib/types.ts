@@ -146,3 +146,14 @@ export type MiningClaim = {
   amount: number;
   createdAt: any;
 }
+
+export type PlanPurchaseRequest = {
+  id: string;
+  userId: string;
+  planId: string;
+  planName: string;
+  planType: 'paid' | 'nft';
+  cost: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: any;
+}
