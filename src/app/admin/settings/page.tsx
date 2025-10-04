@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, setHours, setMinutes, setSeconds, parse } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
@@ -50,9 +50,22 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 export default function AdminSettingsPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm<SettingsFormValues>({
+  const { register, handleSubmit, reset, control, watch, setValue, formState: { errors, isSubmitting } } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
   });
+
+  const launchDate = watch('mining.token_launch_date');
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = e.target.value;
+    if (launchDate) {
+      const [hours, minutes] = time.split(':').map(Number);
+      let newDate = setHours(launchDate, hours);
+      newDate = setMinutes(newDate, minutes);
+      newDate = setSeconds(newDate, 0);
+      setValue('mining.token_launch_date', newDate, { shouldDirty: true });
+    }
+  };
 
   const { fields: paidPlanFields, append: appendPaidPlan, remove: removePaidPlan } = useFieldArray({
     control,
@@ -210,7 +223,7 @@ export default function AdminSettingsPage() {
                     <CardTitle>Mining & Economy</CardTitle>
                   </CardHeader>
                    <CardContent className="space-y-6">
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div>
                             <Label htmlFor="free_claim_reward">Free Claim Reward (HC)</Label>
                             <Input id="free_claim_reward" type="number" step="any" {...register('mining.free_claim_reward')} />
@@ -226,36 +239,46 @@ export default function AdminSettingsPage() {
                             <Input id="p2p_sell_fee_percent" type="number" step="any" {...register('mining.p2p_sell_fee_percent')} />
                             {errors['mining.p2p_sell_fee_percent'] && <p className="text-red-500 text-sm">{errors['mining.p2p_sell_fee_percent'].message}</p>}
                         </div>
-                         <div>
-                          <Label>Token Launch Date</Label>
-                           <Controller
-                                control={control}
-                                name="mining.token_launch_date"
-                                render={({ field }) => (
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                            >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            initialFocus
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                )}
-                            />
+                         <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label>Token Launch Date</Label>
+                            <Controller
+                                  control={control}
+                                  name="mining.token_launch_date"
+                                  render={({ field }) => (
+                                      <Popover>
+                                          <PopoverTrigger asChild>
+                                              <Button
+                                              variant={"outline"}
+                                              className={cn(
+                                                  "w-full justify-start text-left font-normal",
+                                                  !field.value && "text-muted-foreground"
+                                              )}
+                                              >
+                                              <CalendarIcon className="mr-2 h-4 w-4" />
+                                              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                              </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0">
+                                              <Calendar
+                                              mode="single"
+                                              selected={field.value}
+                                              onSelect={field.onChange}
+                                              initialFocus
+                                              />
+                                          </PopoverContent>
+                                      </Popover>
+                                  )}
+                              />
+                          </div>
+                           <div>
+                                <Label>Launch Time</Label>
+                                <Input 
+                                  type="time"
+                                  value={launchDate ? format(launchDate, 'HH:mm') : ''}
+                                  onChange={handleTimeChange}
+                                />
+                           </div>
                         </div>
                     </div>
                      <div className="space-y-4">
@@ -299,5 +322,6 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+
 
     
