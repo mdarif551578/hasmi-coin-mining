@@ -270,7 +270,6 @@ export function MiningSection() {
                     <TabsContent value="nft" className="mt-4">
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                              {isLoading ? Array.from({length: 2}).map((_,i) => <Skeleton key={i} className="h-48 w-full"/>) : settings?.mining?.nftPlans?.map((plan: any) => {
-                                const isPending = pendingPlanPurchases.some(p => p.planId === plan.id && p.planType === 'nft');
                                 return (
                                 <Card key={plan.id} className="flex flex-col bg-card-foreground/5 rounded-xl">
                                     <CardHeader>
@@ -283,7 +282,7 @@ export function MiningSection() {
                                     </CardContent>
                                     <CardFooter>
                                         <Button className="w-full h-10" onClick={() => handlePurchase(plan, 'nft')} disabled={isSubmitting}>
-                                            {isSubmitting ? <Loader2 className="animate-spin" /> : isPending ? 'Request Pending' : 'Purchase'}
+                                            {isSubmitting ? <Loader2 className="animate-spin" /> : 'Purchase'}
                                         </Button>
                                     </CardFooter>
                                 </Card>
@@ -296,4 +295,3 @@ export function MiningSection() {
         </Card>
     );
 }
-
