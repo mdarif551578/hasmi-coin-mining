@@ -76,8 +76,8 @@ export default function AdminDepositsPage() {
                   </TableRow>
                 ))
               ) : requests.length === 0 ? (
-                 <TableRow className="md:table-row flex-col items-start">
-                    <TableCell colSpan={7} className="h-24 text-center w-full block md:table-cell">
+                 <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
                         No pending deposit requests.
                     </TableCell>
                 </TableRow>

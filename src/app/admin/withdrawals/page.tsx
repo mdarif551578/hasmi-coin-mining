@@ -88,8 +88,8 @@ export default function AdminWithdrawalsPage() {
                   </TableRow>
                 ))
               ) : requests.length === 0 ? (
-                 <TableRow className="md:table-row flex-col items-start">
-                    <TableCell colSpan={6} className="h-24 text-center block md:table-cell">
+                 <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
                         No pending withdrawal requests.
                     </TableCell>
                 </TableRow>

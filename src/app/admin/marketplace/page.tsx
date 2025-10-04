@@ -78,7 +78,7 @@ export default function AdminMarketplacePage() {
                             {loadingListings && pendingListings.length === 0 ? (
                                 <TableRow><TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : pendingListings.length === 0 ? (
-                                <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={7} className="h-24 text-center block md:table-cell">No pending sell offers.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={7} className="h-24 text-center">No pending sell offers.</TableCell></TableRow>
                             ) : pendingListings.map(listing => (
                                 <TableRow key={listing.id}>
                                     <TableCell data-label="Date">{format(listing.createdAt.toDate(), 'PP')}</TableCell>
@@ -129,7 +129,7 @@ export default function AdminMarketplacePage() {
                             {loadingBuyRequests && pendingBuyRequests.length === 0 ? (
                                 <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                             ) : pendingBuyRequests.length === 0 ? (
-                                <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={5} className="h-24 text-center block md:table-cell">No pending buy requests.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="h-24 text-center">No pending buy requests.</TableCell></TableRow>
                             ) : pendingBuyRequests.map(req => (
                                 <TableRow key={req.id}>
                                     <TableCell data-label="Date">{format(req.createdAt.toDate(), 'PP')}</TableCell>

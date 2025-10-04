@@ -245,7 +245,7 @@ export default function AdminTasksPage() {
                         {submissionsLoading && submissions.length === 0 ? (
                             <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : submissions.length === 0 ? (
-                            <TableRow className="md:table-row flex-col items-start"><TableCell colSpan={5} className="h-24 text-center block md:table-cell">No pending submissions.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="h-24 text-center">No pending submissions.</TableCell></TableRow>
                         ) : submissions.map(sub => (
                             <TableRow key={sub.id}>
                             <TableCell data-label="User ID" className="font-mono text-xs">{sub.userId}</TableCell>

@@ -79,8 +79,8 @@ export default function AdminExchangesPage() {
                   </TableRow>
                 ))
               ) : requests.length === 0 ? (
-                <TableRow className="md:table-row flex-col items-start">
-                    <TableCell colSpan={5} className="h-24 text-center block md:table-cell">
+                <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
                         No pending exchange requests.
                     </TableCell>
                 </TableRow>
