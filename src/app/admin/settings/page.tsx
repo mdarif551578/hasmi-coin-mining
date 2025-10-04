@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
@@ -18,39 +19,68 @@ import { format, setHours, setMinutes, setSeconds } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
-const planSchema = z.object({
+const paidPlanSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Name is required'),
   rate: z.string().optional(),
   duration: z.string().min(1, 'Duration is required'),
   price: z.coerce.number().positive('Price must be positive'),
-  cost: z.coerce.number().optional(),
-  profit: z.coerce.number().optional(),
+});
+
+const nftPlanSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Name is required'),
+  cost: z.coerce.number().positive('Cost must be positive'),
+  profit: z.coerce.number().positive('Profit must be positive'),
+  duration: z.string().min(1, 'Duration is required'),
 });
 
 const settingsSchema = z.object({
   usd_to_hc: z.coerce.number().positive(),
-  'deposit_methods.bkash.rate': z.coerce.number().positive(),
-  'deposit_methods.bkash.agent_number': z.string(),
-  'deposit_methods.nagad.rate': z.coerce.number().positive(),
-  'deposit_methods.nagad.agent_number': z.string(),
-  'referral_bonus.referee_bonus': z.coerce.number().min(0),
-  'referral_bonus.referrer_bonus': z.coerce.number().min(0),
-  'mining.free_claim_reward': z.coerce.number().min(0, 'Reward must be non-negative'),
-  'mining.claim_interval_hours': z.coerce.number().positive('Interval must be positive'),
-  'mining.token_launch_date': z.date(),
-  'mining.p2p_sell_fee_percent': z.coerce.number().min(0).max(100),
-  paidPlans: z.array(planSchema).optional(),
-  nftPlans: z.array(planSchema).optional(),
+  deposit_methods: z.object({
+    bkash: z.object({
+      rate: z.coerce.number().positive(),
+      agent_number: z.string().min(1, "Agent number is required"),
+    }),
+    nagad: z.object({
+      rate: z.coerce.number().positive(),
+      agent_number: z.string().min(1, "Agent number is required"),
+    }),
+  }),
+  referral_bonus: z.object({
+    referee_bonus: z.coerce.number().min(0),
+    referrer_bonus: z.coerce.number().min(0),
+  }),
+  mining: z.object({
+    free_claim_reward: z.coerce.number().min(0, 'Reward must be non-negative'),
+    claim_interval_hours: z.coerce.number().positive('Interval must be positive'),
+    token_launch_date: z.date(),
+    p2p_sell_fee_percent: z.coerce.number().min(0).max(100),
+  }),
+  paidPlans: z.array(paidPlanSchema).optional(),
+  nftPlans: z.array(nftPlanSchema).optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+// Small polyfill for environments where crypto.randomUUID is not available
+const safeRandomUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 
 export default function AdminSettingsPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors, isSubmitting } } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
+    shouldFocusError: false, // Prevents auto-focus on invalid fields
   });
 
   const launchDate = watch('mining.token_launch_date');
@@ -79,26 +109,37 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     const settingsDocRef = doc(db, 'settings', 'exchangeRates');
-    const unsubscribe = onSnapshot(settingsDocRef, (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        const launchDate = data.mining?.token_launch_date?.toDate ? data.mining.token_launch_date.toDate() : new Date();
-        reset({
-          usd_to_hc: data.usd_to_hc,
-          'deposit_methods.bkash.rate': data.deposit_methods?.bkash?.rate,
-          'deposit_methods.bkash.agent_number': data.deposit_methods?.bkash?.agent_number,
-          'deposit_methods.nagad.rate': data.deposit_methods?.nagad?.rate,
-          'deposit_methods.nagad.agent_number': data.deposit_methods?.nagad?.agent_number,
-          'referral_bonus.referee_bonus': data.referral_bonus?.referee_bonus,
-          'referral_bonus.referrer_bonus': data.referral_bonus?.referrer_bonus,
-          'mining.free_claim_reward': data.mining?.free_claim_reward,
-          'mining.claim_interval_hours': data.mining?.claim_interval_hours,
-          'mining.token_launch_date': launchDate,
-          'mining.p2p_sell_fee_percent': data.mining?.p2p_sell_fee_percent,
-          paidPlans: data.mining?.paidPlans || [],
-          nftPlans: data.mining?.nftPlans || [],
-        });
-      }
+    const unsubscribe = onSnapshot(settingsDocRef, (docSnap) => {
+      const data = docSnap.exists() ? docSnap.data() : {};
+      
+      const launchDate = data.mining?.token_launch_date?.toDate ? data.mining.token_launch_date.toDate() : new Date();
+
+      reset({
+        usd_to_hc: data.usd_to_hc ?? 1,
+        deposit_methods: {
+            bkash: {
+                rate: data.deposit_methods?.bkash?.rate ?? 1,
+                agent_number: data.deposit_methods?.bkash?.agent_number ?? '',
+            },
+            nagad: {
+                rate: data.deposit_methods?.nagad?.rate ?? 1,
+                agent_number: data.deposit_methods?.nagad?.agent_number ?? '',
+            },
+        },
+        referral_bonus: {
+            referee_bonus: data.referral_bonus?.referee_bonus ?? 0,
+            referrer_bonus: data.referral_bonus?.referrer_bonus ?? 0,
+        },
+        mining: {
+            free_claim_reward: data.mining?.free_claim_reward ?? 0,
+            claim_interval_hours: data.mining?.claim_interval_hours ?? 1,
+            token_launch_date: launchDate,
+            p2p_sell_fee_percent: data.mining?.p2p_sell_fee_percent ?? 0,
+        },
+        paidPlans: data.mining?.paidPlans || [],
+        nftPlans: data.mining?.nftPlans || [],
+      });
+      
       setLoading(false);
     });
 
@@ -110,27 +151,15 @@ export default function AdminSettingsPage() {
       const settingsDocRef = doc(db, 'settings', 'exchangeRates');
       const updateData = {
           usd_to_hc: data.usd_to_hc,
-          deposit_methods: {
-              bkash: {
-                  rate: data['deposit_methods.bkash.rate'],
-                  agent_number: data['deposit_methods.bkash.agent_number']
-              },
-              nagad: {
-                   rate: data['deposit_methods.nagad.rate'],
-                  agent_number: data['deposit_methods.nagad.agent_number']
-              }
-          },
-          referral_bonus: {
-              referee_bonus: data['referral_bonus.referee_bonus'],
-              referrer_bonus: data['referral_bonus.referrer_bonus']
-          },
+          deposit_methods: data.deposit_methods,
+          referral_bonus: data.referral_bonus,
           mining: {
-              free_claim_reward: data['mining.free_claim_reward'],
-              claim_interval_hours: data['mining.claim_interval_hours'],
-              token_launch_date: data['mining.token_launch_date'],
-              p2p_sell_fee_percent: data['mining.p2p_sell_fee_percent'],
-              paidPlans: data.paidPlans?.map(p => ({...p, id: p.id || crypto.randomUUID() })) || [],
-              nftPlans: data.nftPlans?.map(p => ({...p, id: p.id || crypto.randomUUID() })) || [],
+              free_claim_reward: data.mining.free_claim_reward,
+              claim_interval_hours: data.mining.claim_interval_hours,
+              token_launch_date: data.mining.token_launch_date,
+              p2p_sell_fee_percent: data.mining.p2p_sell_fee_percent,
+              paidPlans: data.paidPlans?.map(p => ({...p, id: p.id || safeRandomUUID() })) || [],
+              nftPlans: data.nftPlans?.map(p => ({...p, id: p.id || safeRandomUUID() })) || [],
           }
       };
       await updateDoc(settingsDocRef, updateData);
@@ -164,17 +193,17 @@ export default function AdminSettingsPage() {
                         <div>
                             <Label htmlFor="usd_to_hc">USD to HC Rate</Label>
                             <Input id="usd_to_hc" type="number" step="any" {...register('usd_to_hc')} />
-                            {errors.usd_to_hc && <p className="text-red-500 text-sm">{errors.usd_to_hc.message}</p>}
+                            {errors.usd_to_hc && <p className="text-sm text-destructive">{errors.usd_to_hc.message}</p>}
                         </div>
                          <div>
                             <Label htmlFor="referrer_bonus">Referrer Bonus (HC)</Label>
                             <Input id="referrer_bonus" type="number" step="any" {...register('referral_bonus.referrer_bonus')} />
-                             {errors['referral_bonus.referrer_bonus'] && <p className="text-red-500 text-sm">{errors['referral_bonus.referrer_bonus']?.message}</p>}
+                             {errors.referral_bonus?.referrer_bonus && <p className="text-sm text-destructive">{errors.referral_bonus.referrer_bonus.message}</p>}
                         </div>
                         <div>
                             <Label htmlFor="referee_bonus">Referee Bonus (HC)</Label>
                             <Input id="referee_bonus" type="number" step="any" {...register('referral_bonus.referee_bonus')} />
-                            {errors['referral_bonus.referee_bonus'] && <p className="text-red-500 text-sm">{errors['referral_bonus.referee_bonus']?.message}</p>}
+                            {errors.referral_bonus?.referee_bonus && <p className="text-sm text-destructive">{errors.referral_bonus.referee_bonus.message}</p>}
                         </div>
                     </div>
                   </CardContent>
@@ -190,12 +219,12 @@ export default function AdminSettingsPage() {
                             <div>
                                 <Label htmlFor="bkash_rate">Rate (BDT per USD)</Label>
                                 <Input id="bkash_rate" type="number" step="any" {...register('deposit_methods.bkash.rate')} />
-                                {errors['deposit_methods.bkash.rate'] && <p className="text-red-500 text-sm">{errors['deposit_methods.bkash.rate']?.message}</p>}
+                                {errors.deposit_methods?.bkash?.rate && <p className="text-sm text-destructive">{errors.deposit_methods.bkash.rate.message}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="bkash_agent">Agent Number</Label>
                                 <Input id="bkash_agent" {...register('deposit_methods.bkash.agent_number')} />
-                                 {errors['deposit_methods.bkash.agent_number'] && <p className="text-red-500 text-sm">{errors['deposit_methods.bkash.agent_number']?.message}</p>}
+                                 {errors.deposit_methods?.bkash?.agent_number && <p className="text-sm text-destructive">{errors.deposit_methods.bkash.agent_number.message}</p>}
                             </div>
                         </div>
                      </div>
@@ -205,12 +234,12 @@ export default function AdminSettingsPage() {
                             <div>
                                 <Label htmlFor="nagad_rate">Rate (BDT per USD)</Label>
                                 <Input id="nagad_rate" type="number" step="any" {...register('deposit_methods.nagad.rate')} />
-                                {errors['deposit_methods.nagad.rate'] && <p className="text-red-500 text-sm">{errors['deposit_methods.nagad.rate']?.message}</p>}
+                                {errors.deposit_methods?.nagad?.rate && <p className="text-sm text-destructive">{errors.deposit_methods.nagad.rate.message}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="nagad_agent">Agent Number</Label>
                                 <Input id="nagad_agent" {...register('deposit_methods.nagad.agent_number')} />
-                                {errors['deposit_methods.nagad.agent_number'] && <p className="text-red-500 text-sm">{errors['deposit_methods.nagad.agent_number']?.message}</p>}
+                                {errors.deposit_methods?.nagad?.agent_number && <p className="text-sm text-destructive">{errors.deposit_methods.nagad.agent_number.message}</p>}
                             </div>
                         </div>
                      </div>
@@ -226,17 +255,17 @@ export default function AdminSettingsPage() {
                         <div>
                             <Label htmlFor="free_claim_reward">Free Claim Reward (HC)</Label>
                             <Input id="free_claim_reward" type="number" step="any" {...register('mining.free_claim_reward')} />
-                             {errors['mining.free_claim_reward'] && <p className="text-red-500 text-sm">{errors['mining.free_claim_reward']?.message}</p>}
+                             {errors.mining?.free_claim_reward && <p className="text-sm text-destructive">{errors.mining.free_claim_reward.message}</p>}
                         </div>
                         <div>
                             <Label htmlFor="claim_interval_hours">Claim Interval (Hours)</Label>
                             <Input id="claim_interval_hours" type="number" step="any" {...register('mining.claim_interval_hours')} />
-                            {errors['mining.claim_interval_hours'] && <p className="text-red-500 text-sm">{errors['mining.claim_interval_hours']?.message}</p>}
+                            {errors.mining?.claim_interval_hours && <p className="text-sm text-destructive">{errors.mining.claim_interval_hours.message}</p>}
                         </div>
                          <div>
                             <Label htmlFor="p2p_sell_fee_percent">P2P Sell Fee (%)</Label>
                             <Input id="p2p_sell_fee_percent" type="number" step="any" {...register('mining.p2p_sell_fee_percent')} />
-                            {errors['mining.p2p_sell_fee_percent'] && <p className="text-red-500 text-sm">{errors['mining.p2p_sell_fee_percent']?.message}</p>}
+                            {errors.mining?.p2p_sell_fee_percent && <p className="text-sm text-destructive">{errors.mining.p2p_sell_fee_percent.message}</p>}
                         </div>
                          <div className="grid grid-cols-2 gap-2">
                           <div>
@@ -306,7 +335,7 @@ export default function AdminSettingsPage() {
                                 <Button type="button" variant="destructive" size="icon" onClick={() => removeNftPlan(index)}><Trash2 className="size-4" /></Button>
                             </div>
                         ))}
-                         <Button type="button" variant="outline" size="sm" onClick={() => appendNftPlan({ name: 'New NFT', duration: '30 days', price: 0, cost: 1, profit: 1.5 })}><Plus className="mr-2" />Add NFT Plan</Button>
+                         <Button type="button" variant="outline" size="sm" onClick={() => appendNftPlan({ name: 'New NFT', duration: '30 days', cost: 1, profit: 1.5 })}><Plus className="mr-2" />Add NFT Plan</Button>
                     </div>
                    </CardContent>
                 </Card>
@@ -321,3 +350,5 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+
+    
