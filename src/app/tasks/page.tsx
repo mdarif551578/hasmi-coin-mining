@@ -77,7 +77,7 @@ export default function TasksPage() {
       setSelectedTask(tasks.find(t => t.id === submission.taskId) || null);
       setSubmissionText(submission.submissionText);
       if (submission.screenshotUrls) {
-        setFilePreviews(submission.screenshotUrls.map(url => `${API_BASE_URL}${url}`));
+        setFilePreviews(submission.screenshotUrls.map(url => `${API_BASE_URL}/files/${url}`));
       }
       setSubmitDialogOpen(true);
   }
@@ -113,7 +113,7 @@ export default function TasksPage() {
     if (!selectedTask) return;
     
     // Start with existing URLs if in edit mode
-    let finalScreenshotUrls: string[] = selectedSubmission?.screenshotUrls?.map(url => url.replace(API_BASE_URL, '')) || [];
+    let finalScreenshotUrls: string[] = selectedSubmission?.screenshotUrls?.map(url => url.replace(`${API_BASE_URL}/files/`, '')) || [];
 
     if (files.length > 0) { // New files were selected, upload them
         setIsUploading(true);
@@ -130,7 +130,7 @@ export default function TasksPage() {
                 const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
-                finalScreenshotUrls.push(res.data.url);
+                finalScreenshotUrls.push(res.data.file_id);
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Upload Failed', description: `Could not upload ${file.name}.` });
                 setIsUploading(false);
@@ -190,7 +190,7 @@ export default function TasksPage() {
                                     {task.imageUrls.map((url, index) => (
                                         <CarouselItem key={index} className="basis-full">
                                             <div className="aspect-video relative">
-                                                <Image src={`${API_BASE_URL}${url}`} alt={`${task.title} - Image ${index + 1}`} fill={true} className="object-cover"/>
+                                                <Image src={`${API_BASE_URL}/files/${url}`} alt={`${task.title} - Image ${index + 1}`} fill={true} className="object-cover"/>
                                             </div>
                                         </CarouselItem>
                                     ))}
@@ -200,7 +200,7 @@ export default function TasksPage() {
                             </Carousel>
                         ) : (
                             <div className="aspect-video relative">
-                                <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt={task.title} fill={true} className="object-cover"/>
+                                <Image src={`${API_BASE_URL}/files/${task.imageUrls[0]}`} alt={task.title} fill={true} className="object-cover"/>
                             </div>
                         )
                     )}
@@ -336,5 +336,7 @@ export default function TasksPage() {
     </>
   );
 }
+
+    
 
     

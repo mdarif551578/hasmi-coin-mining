@@ -115,7 +115,7 @@ export default function AdminTasksPage() {
                 const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
-                imageUrls.push(res.data.url);
+                imageUrls.push(res.data.file_id);
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Upload Failed', description: `Could not upload image ${file.name}.` });
                 setIsUploading(false);
@@ -254,8 +254,8 @@ export default function AdminTasksPage() {
                             <TableCell data-label="Screenshots">
                                 {sub.screenshotUrls && sub.screenshotUrls.length > 0 ? (
                                     <div className="flex items-center gap-2">
-                                        <a href={`${API_BASE_URL}${sub.screenshotUrls[0]}`} target="_blank" rel="noopener noreferrer">
-                                            <Image src={`${API_BASE_URL}${sub.screenshotUrls[0]}`} alt="Screenshot" width={80} height={45} className="rounded-md object-cover" />
+                                        <a href={`${API_BASE_URL}/files/${sub.screenshotUrls[0]}`} target="_blank" rel="noopener noreferrer">
+                                            <Image src={`${API_BASE_URL}/files/${sub.screenshotUrls[0]}`} alt="Screenshot" width={80} height={45} className="rounded-md object-cover" />
                                         </a>
                                         {sub.screenshotUrls.length > 1 && (
                                             <Badge variant="secondary">+{sub.screenshotUrls.length - 1}</Badge>
@@ -309,7 +309,7 @@ export default function AdminTasksPage() {
                         ) : tasks.map(task => (
                             <TableRow key={task.id}>
                              <TableCell data-label="Image">
-                                {task.imageUrls && task.imageUrls.length > 0 ? <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt="Task image" width={64} height={36} className="rounded-md object-cover" /> : 'No image'}
+                                {task.imageUrls && task.imageUrls.length > 0 ? <Image src={`${API_BASE_URL}/files/${task.imageUrls[0]}`} alt="Task image" width={64} height={36} className="rounded-md object-cover" /> : 'No image'}
                              </TableCell>
                             <TableCell data-label="Title" className="max-w-xs truncate">{task.title}</TableCell>
                             <TableCell data-label="Reward">{task.reward} HC</TableCell>
@@ -336,5 +336,7 @@ export default function AdminTasksPage() {
     </div>
   );
 }
+
+    
 
     
