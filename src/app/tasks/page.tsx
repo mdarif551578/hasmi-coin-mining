@@ -29,6 +29,7 @@ import axios from "axios";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
@@ -183,9 +184,25 @@ export default function TasksPage() {
             return (
                 <Card key={task.id} className="rounded-2xl overflow-hidden">
                     {task.imageUrls && task.imageUrls.length > 0 && (
-                        <div className="aspect-video relative">
-                            <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt={task.title} layout="fill" className="object-cover"/>
-                        </div>
+                        task.imageUrls.length > 1 ? (
+                            <Carousel className="w-full">
+                                <CarouselContent>
+                                    {task.imageUrls.map((url, index) => (
+                                        <CarouselItem key={index} className="basis-full">
+                                            <div className="aspect-video relative">
+                                                <Image src={`${API_BASE_URL}${url}`} alt={`${task.title} - Image ${index + 1}`} layout="fill" className="object-cover"/>
+                                            </div>
+                                        </CarouselItem>
+                                    ))}
+                                </CarouselContent>
+                                <CarouselPrevious className="left-2" />
+                                <CarouselNext className="right-2" />
+                            </Carousel>
+                        ) : (
+                            <div className="aspect-video relative">
+                                <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt={task.title} layout="fill" className="object-cover"/>
+                            </div>
+                        )
                     )}
                     <CardContent className="p-4">
                         <h3 className="font-bold">{task.title}</h3>
