@@ -31,7 +31,7 @@ const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   reward: z.coerce.number().min(0, 'Reward must be non-negative'),
-  link: z.string().url('Must be a valid URL'),
+  link: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
   isActive: z.boolean(),
 });
 
@@ -130,7 +130,7 @@ export default function AdminTasksPage() {
         title: data.title,
         description: data.description,
         reward: data.reward,
-        link: data.link,
+        link: data.link || '',
         isActive: data.isActive,
         imageUrls: imageUrls,
         createdAt: serverTimestamp(),
@@ -198,7 +198,7 @@ export default function AdminTasksPage() {
                     {errors.reward && <p className="text-red-500 text-sm">{errors.reward.message}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="link">Link</Label>
+                    <Label htmlFor="link">Link (Optional)</Label>
                     <Input id="link" {...register('link')} />
                     {errors.link && <p className="text-red-500 text-sm">{errors.link.message}</p>}
                   </div>
@@ -313,7 +313,7 @@ export default function AdminTasksPage() {
                              </TableCell>
                             <TableCell data-label="Title" className="max-w-xs truncate">{task.title}</TableCell>
                             <TableCell data-label="Reward">{task.reward} HC</TableCell>
-                            <TableCell data-label="Link"><a href={task.link} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline">Link <ExternalLink className="h-3 w-3" /></a></TableCell>
+                            <TableCell data-label="Link">{task.link ? <a href={task.link} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline">Link <ExternalLink className="h-3 w-3" /></a> : 'N/A'}</TableCell>
                             <TableCell data-label="Status">{task.isActive ? 'Active' : 'Inactive'}</TableCell>
                             </TableRow>
                         ))}
@@ -336,3 +336,5 @@ export default function AdminTasksPage() {
     </div>
   );
 }
+
+    

@@ -208,10 +208,12 @@ export default function TasksPage() {
                         <h3 className="font-bold">{task.title}</h3>
                         {task.description && <MarkdownRenderer text={task.description} />}
                         
-                         <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1 my-2">
-                            <ExternalLink className="size-4"/>
-                            Visit Task Link
-                        </a>
+                        {task.link && (
+                            <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1 my-2">
+                                <ExternalLink className="size-4"/>
+                                Visit Task Link
+                            </a>
+                        )}
 
                         <Separator className="my-4"/>
 
@@ -284,15 +286,17 @@ export default function TasksPage() {
                   </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleDialogSubmit} className="space-y-4 pt-2">
-                 <div className="space-y-2">
-                     <Label>Task Link</Label>
-                      <Button variant="secondary" className="w-full" asChild>
-                        <a href={selectedTask?.link} target="_blank" rel="noopener noreferrer">
-                             <ExternalLink className="mr-2"/>
-                             Visit Task Link
-                        </a>
-                      </Button>
-                 </div>
+                 {selectedTask?.link && (
+                    <div className="space-y-2">
+                        <Label>Task Link</Label>
+                        <Button variant="secondary" className="w-full" asChild>
+                            <a href={selectedTask?.link} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="mr-2"/>
+                                Visit Task Link
+                            </a>
+                        </Button>
+                    </div>
+                 )}
                   <div className="space-y-2">
                       <Label htmlFor="screenshots">Screenshots</Label>
                       <Input id="screenshots" type="file" accept="image/*" onChange={handleFileChange} multiple />
@@ -332,3 +336,5 @@ export default function TasksPage() {
     </>
   );
 }
+
+    
