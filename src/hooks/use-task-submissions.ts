@@ -70,6 +70,7 @@ export function useTaskSubmissions() {
       await updateDoc(submissionRef, {
         screenshotUrls,
         submissionText,
+        // We don't change the timestamp on edit
       });
       toast({ title: 'Submission Updated', description: 'Your changes have been saved.' });
     } catch (error) {

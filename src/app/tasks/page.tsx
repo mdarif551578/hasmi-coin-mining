@@ -13,8 +13,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +31,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
@@ -40,6 +42,17 @@ const MarkdownRenderer = ({ text }: { text: string }) => {
         </div>
     );
 };
+
+const SubmissionStatusIndicator = ({ status }: { status: TaskSubmission['status'] }) => {
+    const statusMap = {
+        pending: { icon: BadgeHelp, text: "Pending", color: "text-amber-500" },
+        approved: { icon: CheckCircle2, text: "Approved", color: "text-green-500" },
+        rejected: { icon: XCircle, text: "Rejected", color: "text-red-500" },
+    };
+    const { icon: Icon, text, color } = statusMap[status];
+    return <div className={cn("flex items-center gap-1.5 text-xs font-medium", color)}><Icon className="size-4" />{text}</div>
+}
+
 
 export default function TasksPage() {
   const { toast } = useToast();
@@ -94,34 +107,45 @@ export default function TasksPage() {
   }
 
   const removeImage = (index: number) => {
-      // For new local files
-      const newLocalFiles = files.filter((_, i) => i !== index);
-      const newLocalPreviews = filePreviews.filter((p) => !p.startsWith('blob:')).concat(
-          newLocalFiles.map(f => URL.createObjectURL(f))
-      )
-      
-      // For existing remote files (in edit mode)
-      const newRemotePreviews = filePreviews.filter((p, i) => i !== index && p.startsWith('http'));
-      
-      setFiles(newLocalFiles);
-      setFilePreviews(newRemotePreviews);
+    const isLocalBlob = filePreviews[index].startsWith('blob:');
+    
+    // Create new arrays by filtering
+    const newFilePreviews = filePreviews.filter((_, i) => i !== index);
+    
+    let newFiles: File[] = [];
+    if (isLocalBlob) {
+      // Find the corresponding file index by matching blob URLs
+      const fileIndexToRemove = files.findIndex(file => URL.createObjectURL(file) === filePreviews[index]);
+      if (fileIndexToRemove > -1) {
+          newFiles = files.filter((_, i) => i !== fileIndexToRemove);
+      }
+    } else {
+        newFiles = files;
+    }
+    
+    // Revoke the object URL for the removed preview to free memory
+    if(isLocalBlob) {
+       URL.revokeObjectURL(filePreviews[index]);
+    }
+    
+    setFilePreviews(newFilePreviews);
+    setFiles(newFiles);
   };
 
 
-  const handleDialogSubmit = async (e: React.FormEvent) => {
+ const handleDialogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask) return;
-    
-    // Start with existing URLs if in edit mode
-    let finalScreenshotUrls: string[] = selectedSubmission?.screenshotUrls?.map(url => url.replace(`${API_BASE_URL}/files/`, '')) || [];
 
-    if (files.length > 0) { // New files were selected, upload them
+    let finalScreenshotUrls: string[] = [];
+
+    // Separate existing URLs from new file previews
+    const existingUrls = filePreviews.filter(p => !p.startsWith('blob:')).map(url => url.replace(`${API_BASE_URL}/files/`, ''));
+    finalScreenshotUrls.push(...existingUrls);
+    
+    // Upload only the new files
+    if (files.length > 0) {
         setIsUploading(true);
-        // On update, if new files are added, we might want to replace or add to existing.
-        // For simplicity, this implementation replaces all with the new set if any new file is added.
-        if (selectedSubmission) {
-            finalScreenshotUrls = [];
-        }
         for (const file of files) {
             const formData = new FormData();
             formData.append("file", file);
@@ -140,14 +164,14 @@ export default function TasksPage() {
         setIsUploading(false);
     }
     
-    if (finalScreenshotUrls.length === 0 && files.length === 0) {
-        toast({ variant: 'destructive', title: 'Missing Screenshot', description: 'Please select at least one image to upload.' });
+    if (finalScreenshotUrls.length === 0) {
+        toast({ variant: 'destructive', title: 'Missing Screenshot', description: 'Please provide at least one screenshot.' });
         return;
     }
     
-    if (selectedSubmission) { // This is an update
+    if (selectedSubmission) {
         await updateSubmission(selectedSubmission.id, finalScreenshotUrls, submissionText);
-    } else { // This is a new submission
+    } else {
         await createSubmission(selectedTask.id, finalScreenshotUrls, submissionText);
     }
 
@@ -159,15 +183,6 @@ export default function TasksPage() {
   
   const isLoading = userLoading || tasksLoading || submissionsLoading;
   
-  const SubmissionStatusIndicator = ({ status }: { status: TaskSubmission['status'] }) => {
-    const statusMap = {
-        pending: { icon: BadgeHelp, text: "Pending", color: "text-amber-500" },
-        approved: { icon: CheckCircle2, text: "Approved", color: "text-green-500" },
-        rejected: { icon: XCircle, text: "Rejected", color: "text-red-500" },
-    };
-    const { icon: Icon, text, color } = statusMap[status];
-    return <div className={cn("flex items-center gap-1.5 text-xs font-medium", color)}><Icon className="size-4" />{text}</div>
-  }
 
   return (
     <>
@@ -178,95 +193,122 @@ export default function TasksPage() {
         
         <div className="space-y-4">
           {isLoading ? (
-            Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)
+            Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)
           ) : tasks.map((task) => {
             const submission = submissions.find(s => s.taskId === task.id);
             return (
-                <Card key={task.id} className="rounded-2xl overflow-hidden">
-                    {task.imageUrls && task.imageUrls.length > 0 && (
-                        task.imageUrls.length > 1 ? (
-                            <Carousel className="w-full">
-                                <CarouselContent>
-                                    {task.imageUrls.map((url, index) => (
-                                        <CarouselItem key={index} className="basis-full">
-                                            <div className="aspect-video relative">
-                                                <Image src={`${API_BASE_URL}/files/${url}`} alt={`${task.title} - Image ${index + 1}`} fill={true} className="object-cover"/>
-                                            </div>
-                                        </CarouselItem>
-                                    ))}
-                                </CarouselContent>
-                                <CarouselPrevious className="left-2" />
-                                <CarouselNext className="right-2" />
-                            </Carousel>
-                        ) : (
-                            <div className="aspect-video relative">
-                                <Image src={`${API_BASE_URL}/files/${task.imageUrls[0]}`} alt={task.title} fill={true} className="object-cover"/>
-                            </div>
-                        )
-                    )}
-                    <CardContent className="p-4">
-                        <h3 className="font-bold">{task.title}</h3>
-                        {task.description && <MarkdownRenderer text={task.description} />}
-                        
-                        {task.link && (
-                            <a href={task.link} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1 my-2">
-                                <ExternalLink className="size-4"/>
-                                Visit Task Link
-                            </a>
-                        )}
-
-                        <Separator className="my-4"/>
-
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-muted-foreground">Reward</p>
-                                <p className="text-primary font-bold">
-                                    +{task.reward} HC
-                                </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
-                                {submission ? (
-                                    <>
+                <Dialog key={task.id}>
+                    <DialogTrigger asChild>
+                        <Card className="rounded-2xl overflow-hidden active:scale-[0.99] transition-transform cursor-pointer">
+                            <CardContent className="p-4 flex justify-between items-center">
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="font-bold truncate">{task.title}</p>
+                                    <p className="text-sm text-primary font-bold">
+                                        +{task.reward} HC
+                                    </p>
+                                </div>
+                                <div className="ml-4 shrink-0">
+                                    {submission ? (
                                         <SubmissionStatusIndicator status={submission.status} />
-                                        {submission.status === 'pending' && (
-                                            <div className="flex items-center gap-1">
-                                                <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => openEditDialog(submission)}>
-                                                    <Edit className="size-3 mr-1"/> Edit
-                                                </Button>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                                                            <Trash2 className="size-3" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                This will permanently delete your submission for this task. This action cannot be undone.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => deleteSubmission(submission.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <Button 
-                                        onClick={() => openSubmitDialog(task)}
-                                    >
-                                    <CheckSquare className="mr-2"/>
-                                    Submit Proof
-                                    </Button>
-                                )}
+                                    ) : (
+                                        <Button variant="outline" size="sm" className="pointer-events-none">
+                                            View Task
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md p-0">
+                         {task.imageUrls && task.imageUrls.length > 0 && (
+                            task.imageUrls.length > 1 ? (
+                                <Carousel className="w-full rounded-t-lg overflow-hidden">
+                                    <CarouselContent>
+                                        {task.imageUrls.map((url, index) => (
+                                            <CarouselItem key={index} className="basis-full">
+                                                <div className="aspect-video relative">
+                                                    <Image src={`${API_BASE_URL}/files/${url}`} alt={`${task.title} - Image ${index + 1}`} fill={true} className="object-cover"/>
+                                                </div>
+                                            </CarouselItem>
+                                        ))}
+                                    </CarouselContent>
+                                    <CarouselPrevious className="left-2" />
+                                    <CarouselNext className="right-2" />
+                                </Carousel>
+                            ) : (
+                                <div className="aspect-video relative rounded-t-lg overflow-hidden">
+                                    <Image src={`${API_BASE_URL}/files/${task.imageUrls[0]}`} alt={task.title} fill={true} className="object-cover"/>
+                                </div>
+                            )
+                        )}
+                        <div className="p-6 space-y-4">
+                            <DialogHeader className="text-left">
+                               <DialogTitle>{task.title}</DialogTitle>
+                            </DialogHeader>
+                            {task.description && <MarkdownRenderer text={task.description} />}
+                            
+                            {task.link && (
+                                <Button variant="secondary" asChild>
+                                <a href={task.link} target="_blank" rel="noopener noreferrer" className="w-full">
+                                    <ExternalLink className="mr-2"/>
+                                    Visit Task Link
+                                </a>
+                                </Button>
+                            )}
+
+                            <Separator/>
+
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Reward</p>
+                                    <p className="text-primary font-bold">
+                                        +{task.reward} HC
+                                    </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
+                                    {submission ? (
+                                        <>
+                                            <SubmissionStatusIndicator status={submission.status} />
+                                            {submission.status === 'pending' && (
+                                                <div className="flex items-center gap-1">
+                                                    <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => openEditDialog(submission)}>
+                                                        <Edit className="size-3 mr-1"/> Edit
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                                                <Trash2 className="size-3" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    This will permanently delete your submission for this task. This action cannot be undone.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => deleteSubmission(submission.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <DialogClose asChild>
+                                            <Button onClick={() => openSubmitDialog(task)}>
+                                                <CheckSquare className="mr-2"/>
+                                                Submit Proof
+                                            </Button>
+                                        </DialogClose>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </DialogContent>
+                </Dialog>
             );
           })}
            {!isLoading && tasks.length === 0 && (
@@ -277,6 +319,7 @@ export default function TasksPage() {
         </div>
       </div>
 
+      {/* This Dialog is now specifically for submitting/editing proof */}
       <Dialog open={isSubmitDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) resetDialog(); setSubmitDialogOpen(isOpen); }}>
           <DialogContent>
               <DialogHeader>
@@ -285,7 +328,7 @@ export default function TasksPage() {
                       Provide screenshots and any required text to prove you've completed the task.
                   </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleDialogSubmit} className="space-y-4 pt-2">
+              <form onSubmit={handleDialogSubmit} className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto p-1 pr-2">
                  {selectedTask?.link && (
                     <div className="space-y-2">
                         <Label>Task Link</Label>
@@ -323,7 +366,7 @@ export default function TasksPage() {
                       <Label htmlFor="submission-text">Submission Text (Optional)</Label>
                       <Textarea id="submission-text" placeholder="e.g. Your username, a link, or other proof." value={submissionText} onChange={e => setSubmissionText(e.target.value)} />
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="sticky bottom-0 bg-background py-4 border-t">
                       <Button type="button" variant="ghost" onClick={() => setSubmitDialogOpen(false)}>Cancel</Button>
                       <Button type="submit" disabled={isSubmitting || isUploading}>
                           {(isSubmitting || isUploading) && <Loader2 className="animate-spin mr-2"/>}
@@ -336,7 +379,5 @@ export default function TasksPage() {
     </>
   );
 }
-
-    
 
     
