@@ -243,9 +243,9 @@ export default function AdminTasksPage() {
                         </TableHeader>
                         <TableBody>
                         {submissionsLoading && submissions.length === 0 ? (
-                            <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="md:table-cell"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : submissions.length === 0 ? (
-                            <TableRow><TableCell colSpan={5} className="h-24 text-center">No pending submissions.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="h-24 text-center md:table-cell">No pending submissions.</TableCell></TableRow>
                         ) : submissions.map(sub => (
                             <TableRow key={sub.id}>
                             <TableCell data-label="User ID" className="font-mono text-xs">{sub.userId}</TableCell>
@@ -305,7 +305,7 @@ export default function AdminTasksPage() {
                         </TableHeader>
                         <TableBody>
                         {tasksLoading && tasks.length === 0 ? (
-                           <TableRow><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                           <TableRow><TableCell colSpan={5} className="md:table-cell"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                         ) : tasks.map(task => (
                             <TableRow key={task.id}>
                              <TableCell data-label="Image">

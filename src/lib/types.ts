@@ -159,4 +159,3 @@ export type PlanPurchaseRequest = {
   createdAt: Timestamp;
   duration?: string;
 }
-
