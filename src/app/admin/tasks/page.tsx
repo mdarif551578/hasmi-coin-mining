@@ -29,7 +29,7 @@ const API_BASE_URL = "https://hasmi-img-storage.vercel.app";
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
+  description: z.string().min(1, 'Description is required'),
   reward: z.coerce.number().min(0, 'Reward must be non-negative'),
   link: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
   isActive: z.boolean(),
@@ -104,7 +104,7 @@ export default function AdminTasksPage() {
   };
   
   const onTaskSubmit: SubmitHandler<TaskFormValues> = async (data) => {
-    const imageUrls: string[] = [];
+    let imageUrls: string[] = [];
 
     if (imageFiles.length > 0) {
         setIsUploading(true);
@@ -170,13 +170,13 @@ export default function AdminTasksPage() {
                 {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
               </div>
                <div>
-                <Label htmlFor="images">Task Images</Label>
+                <Label htmlFor="images">Task Images (Optional)</Label>
                 <Input id="images" type="file" accept="image/*" onChange={handleFileChange} multiple />
                  {imagePreviews.length > 0 && (
                     <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                         {imagePreviews.map((preview, index) => (
                             <div key={index} className="relative aspect-square">
-                                <Image src={preview} alt={`Preview ${index}`} layout="fill" className="rounded-md object-cover"/>
+                                <Image src={preview} alt={`Preview ${index}`} fill={true} className="rounded-md object-cover"/>
                                 <Button
                                     type="button"
                                     variant="destructive"

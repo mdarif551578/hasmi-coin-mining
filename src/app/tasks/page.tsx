@@ -190,7 +190,7 @@ export default function TasksPage() {
                                     {task.imageUrls.map((url, index) => (
                                         <CarouselItem key={index} className="basis-full">
                                             <div className="aspect-video relative">
-                                                <Image src={`${API_BASE_URL}${url}`} alt={`${task.title} - Image ${index + 1}`} layout="fill" className="object-cover"/>
+                                                <Image src={`${API_BASE_URL}${url}`} alt={`${task.title} - Image ${index + 1}`} fill={true} className="object-cover"/>
                                             </div>
                                         </CarouselItem>
                                     ))}
@@ -200,7 +200,7 @@ export default function TasksPage() {
                             </Carousel>
                         ) : (
                             <div className="aspect-video relative">
-                                <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt={task.title} layout="fill" className="object-cover"/>
+                                <Image src={`${API_BASE_URL}${task.imageUrls[0]}`} alt={task.title} fill={true} className="object-cover"/>
                             </div>
                         )
                     )}
@@ -304,7 +304,7 @@ export default function TasksPage() {
                             <div className="mt-2 grid grid-cols-3 gap-2">
                                 {filePreviews.map((previewUrl, index) => (
                                     <div key={index} className="relative aspect-video">
-                                        <Image src={previewUrl} alt={`Screenshot preview ${index + 1}`} layout="fill" className="rounded-md object-cover" />
+                                        <Image src={previewUrl} alt={`Screenshot preview ${index + 1}`} fill={true} className="rounded-md object-cover" />
                                          <Button
                                             type="button"
                                             variant="destructive"
